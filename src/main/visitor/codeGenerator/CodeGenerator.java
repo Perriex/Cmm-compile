@@ -311,10 +311,13 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(BinaryExpression binaryExpression) {
         //todo
-        addCommand(binaryExpression.getFirstOperand().accept(this));
-        addCommand(binaryExpression.getSecondOperand().accept(this));
         Type expr = expressionTypeChecker.visit(binaryExpression);
         if(expr instanceof IntType){
+            addCommand(binaryExpression.getFirstOperand().accept(this));
+            addCommand("invokevirtual java/lang/Integer/intValue()I");
+
+            addCommand(binaryExpression.getSecondOperand().accept(this));
+            addCommand("invokevirtual java/lang/Integer/intValue()I");
             if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
                 return "iadd";
             }
@@ -328,12 +331,18 @@ public class  CodeGenerator extends Visitor<String> {
                 return "idiv";
             }
             // == => if_icmpeq
-            //  > <
+            //  > < =
         }
         if(expr instanceof BoolType){
+            addCommand(binaryExpression.getFirstOperand().accept(this));
+            addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
+
+            addCommand(binaryExpression.getSecondOperand().accept(this));
+            addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
             // == => if_icmpeq
-            // & | ~
-            if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
+            // & | ~ =
+
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.and){
                 return "iand";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.or){
@@ -341,13 +350,15 @@ public class  CodeGenerator extends Visitor<String> {
             }
         }
         if(expr instanceof ListType){
-            return null;
+            // =
         }
         if(expr instanceof FptrType){
             // == => if_acmpeq
+            // =
         }
         if(expr instanceof StructType){
             // == => if_acmpeq
+            // =
         }
         return null;
     }
@@ -366,7 +377,12 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(Identifier identifier){
         //todo
-        return null;
+        Type id = expressionTypeChecker.visit(identifier);
+        if(id instanceof FptrType){
+            //todo
+            return null;
+        }
+        return "aload_"+slotOf(identifier.getName());
     }
 
     @Override

@@ -18,3 +18,12 @@
 		ldc 0
 		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
 		astore_2
+		aload_1
+		invokevirtual java/lang/Boolean/booleanValue()Z
+		aload_2
+		invokevirtual java/lang/Boolean/booleanValue()Z
+		iand
+		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		astore_3
+		return
+.end method
