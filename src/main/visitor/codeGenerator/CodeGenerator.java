@@ -21,6 +21,8 @@ public class  CodeGenerator extends Visitor<String> {
     ExpressionTypeChecker expressionTypeChecker = new ExpressionTypeChecker();
     private String outputPath;
     private FileWriter currentFile;
+    private Boolean isInStruct = false;
+    private ArrayList<String> arr = new ArrayList<>();
 
     private void copyFile(String toBeCopied, String toBePasted) {
         try {
@@ -89,29 +91,49 @@ public class  CodeGenerator extends Visitor<String> {
         addCommand(".limit stack 128");
         addCommand(".limit locals 128");
         addCommand("new Main");
+        addCommand("dup");
         addCommand("invokespecial Main/<init>()V");
         addCommand("return");
         addCommand(".end method");
     }
 
     private int slotOf(String identifier) {
-        //todo
-        return 0;
+        //todo - done
+        if(arr.contains(identifier)){
+            return arr.indexOf(identifier)+1;
+        }
+        arr.add(identifier);
+        return arr.size();
+    }
+
+    private void setHeaders()
+    {
+        addCommand(".limit stack 128");
+        addCommand(".limit locals 128");
+    }
+
+    private void setFooter() {
+        addCommand("return");
+        addCommand(".end method");
     }
 
     @Override
     public String visit(Program program) {
         prepareOutputFolder();
 
+        isInStruct = true;
         for(StructDeclaration structDeclaration : program.getStructs()){
+            arr.clear();
             structDeclaration.accept(this);
         }
+        isInStruct = false;
 
         createFile("Main");
-
+        arr.clear();
         program.getMain().accept(this);
 
         for (FunctionDeclaration functionDeclaration: program.getFunctions()){
+            arr.clear();
             functionDeclaration.accept(this);
         }
         return null;
@@ -129,16 +151,34 @@ public class  CodeGenerator extends Visitor<String> {
         //todo
         return null;
     }
-
     @Override
     public String visit(MainDeclaration mainDeclaration) {
-        //todo
+        //todo - done
+        addCommand(".class public Main");
+        addCommand(".super java/lang/Object");
+        addStaticMainMethod();
+        addCommand(".method public <init>()V");
+        setHeaders();
+        addCommand("aload_0");
+        addCommand("invokespecial java/lang/Object/<init>()V");
+        mainDeclaration.getBody().accept(this);
+        setFooter();
         return null;
     }
 
     @Override
     public String visit(VariableDeclaration variableDeclaration) {
         //todo
+        Type variableType = variableDeclaration.getVarType();
+        if(isInStruct){
+
+        }
+        else{
+            if(variableDeclaration.getDefaultValue() != null){
+                addCommand(variableDeclaration.getDefaultValue().accept(this));
+                addCommand("astore_"+slotOf(variableDeclaration.getVarName().getName()));
+            }
+        }
         return null;
     }
 
@@ -156,6 +196,9 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(BlockStmt blockStmt) {
         //todo
+        for(Statement stmt: blockStmt.getStatements()){
+            stmt.accept(this);
+        }
         return null;
     }
 
@@ -201,6 +244,9 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(VarDecStmt varDecStmt) {
         //todo
+        for(VariableDeclaration stmt: varDecStmt.getVars()){
+            stmt.accept(this);
+        }
         return null;
     }
 
@@ -265,8 +311,8 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) {
-        //todo
-        return null;
+        //todo - done
+        return "iconst_"+intValue.getConstant();
     }
 
     @Override
