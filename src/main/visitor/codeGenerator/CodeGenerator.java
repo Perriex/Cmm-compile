@@ -184,7 +184,7 @@ public class  CodeGenerator extends Visitor<String> {
             SymbolTable.push(functionSymbolTableItem.getFunctionSymbolTable());
         }catch (ItemNotFoundException e){//unreachable
         }
-        //todo - done
+        // done
         addCommand(".class public Main");
         addCommand(".super java/lang/Object");
         addStaticMainMethod();
@@ -245,13 +245,18 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(AssignmentStmt assignmentStmt) {
-        //todo
+        //todo - need test ??
+        BinaryExpression node = new BinaryExpression(assignmentStmt.getLValue(),
+                assignmentStmt.getRValue(),
+                BinaryOperator.assign);
+        addCommand(node.accept(this));
+        addCommand("pop");
         return null;
     }
 
     @Override
     public String visit(BlockStmt blockStmt) {
-        //todo
+        //done
         for(Statement stmt: blockStmt.getStatements()){
             stmt.accept(this);
         }
@@ -299,7 +304,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(VarDecStmt varDecStmt) {
-        //todo - done
+        //done
         for(VariableDeclaration stmt: varDecStmt.getVars()){
             stmt.accept(this);
         }
@@ -308,12 +313,14 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppendStmt listAppendStmt) {
+        //done
         addCommand(listAppendStmt.getListAppendExpr().accept(this));
         return null;
     }
 
     @Override
     public String visit(ListSizeStmt listSizeStmt) {
+        // done
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
         return null;
     }
@@ -432,13 +439,14 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListSize listSize){
+        //done
         addCommand(listSize.getArg().accept(this));
         return "invokevirtual List/getSize()I";
     }
 
     @Override
     public String visit(ListAppend listAppend) {
-        //todo
+        //done
         addCommand(listAppend.getListArg().accept(this));
         addCommand(listAppend.getElementArg().accept(this));
         return "invokevirtual List/addElement(Ljava/lang/Object;)V";
@@ -446,13 +454,13 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) {
-        //todo - done
+        //done
         return "ldc "+intValue.getConstant() +'\n'+"invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
     }
 
     @Override
     public String visit(BoolValue boolValue) {
-        //todo - done
+        //done
         return (boolValue.getConstant() ? "ldc 1" : "ldc 0" )+ '\n' + "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
     }
 
