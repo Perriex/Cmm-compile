@@ -16,11 +16,10 @@ import main.symbolTable.items.FunctionSymbolTableItem;
 import main.symbolTable.items.StructSymbolTableItem;
 import main.visitor.Visitor;
 import main.visitor.type.ExpressionTypeChecker;
-
 import java.io.*;
 import java.util.*;
 
-public class CodeGenerator extends Visitor<String> {
+public class  CodeGenerator extends Visitor<String> {
     ExpressionTypeChecker expressionTypeChecker = new ExpressionTypeChecker();
     private String outputPath;
     private FileWriter currentFile;
@@ -53,11 +52,12 @@ public class CodeGenerator extends Visitor<String> {
         try {
             File directory = new File(this.outputPath);
             File[] files = directory.listFiles();
-            if (files != null)
+            if(files != null)
                 for (File file : files)
                     file.delete();
             directory.mkdir();
-        } catch (SecurityException e) {//unreachable
+        }
+        catch(SecurityException e) {//unreachable
 
         }
         copyFile(jasminPath, this.outputPath + "jasmin.jar");
@@ -78,9 +78,9 @@ public class CodeGenerator extends Visitor<String> {
     private void addCommand(String command) {
         try {
             command = String.join("\n\t\t", command.split("\n"));
-            if (command.startsWith("Label_"))
+            if(command.startsWith("Label_"))
                 this.currentFile.write("\t" + command + "\n");
-            else if (command.startsWith("."))
+            else if(command.startsWith("."))
                 this.currentFile.write(command + "\n");
             else
                 this.currentFile.write("\t\t" + command + "\n");
@@ -102,12 +102,12 @@ public class CodeGenerator extends Visitor<String> {
 
     private int slotOf(String identifier) {
         //todo - done
-        if (identifier.equals("")) {
+        if(identifier.equals("")){
             arr.add("");
             return arr.size();
         }
-        if (arr.contains(identifier)) {
-            return arr.indexOf(identifier) + 1;
+        if(arr.contains(identifier)){
+            return arr.indexOf(identifier)+1;
         }
         arr.add(identifier);
         return arr.size();
@@ -325,12 +325,14 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppendStmt listAppendStmt) {
+        //done
         addCommand(listAppendStmt.getListAppendExpr().accept(this));
         return null;
     }
 
     @Override
     public String visit(ListSizeStmt listSizeStmt) {
+        // done
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
         return null;
     }
@@ -458,6 +460,7 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListSize listSize) {
+        //done
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
@@ -468,7 +471,7 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppend listAppend) {
-        //todo
+        //done
         var sb = new StringBuilder();
         sb.append(listAppend.getListArg().accept(this));
         sb.append("\n");
@@ -480,13 +483,13 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) {
-        //todo - done
+        //done
         return "ldc " + intValue.getConstant() + '\n' + "invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
     }
 
     @Override
     public String visit(BoolValue boolValue) {
-        //todo - done
+        //done
         return (boolValue.getConstant() ? "ldc 1" : "ldc 0") + '\n' + "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
     }
 
