@@ -131,19 +131,16 @@ public class  CodeGenerator extends Visitor<String> {
         isInStruct = true;
         for(StructDeclaration structDeclaration : program.getStructs()){
             arr.clear();
-            label = 0;
             structDeclaration.accept(this);
         }
         isInStruct = false;
 
         createFile("Main");
         arr.clear();
-        label = 0;
         program.getMain().accept(this);
 
         for (FunctionDeclaration functionDeclaration: program.getFunctions()){
             arr.clear();
-            label = 0;
             functionDeclaration.accept(this);
         }
         return null;
@@ -175,11 +172,6 @@ public class  CodeGenerator extends Visitor<String> {
         }
 
         //todo
-        //addCommand(".method public static "+functionDeclaration.getFunctionName().getName()+"()V");//return and argument
-        //setHeaders();
-        //functionDeclaration.getBody().accept(this);
-        //setFooter();
-        //end
 
         SymbolTable.pop();
         return null;
@@ -223,16 +215,25 @@ public class  CodeGenerator extends Visitor<String> {
             if(variableDeclaration.getVarType() instanceof IntType) {
                 if(!hasDefault){
                     addCommand("iconst_0");
-                    addCommand("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
                 }
+                addCommand("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
             }
             if(variableDeclaration.getVarType() instanceof BoolType){
                 if(!hasDefault){
                     addCommand("iconst_0");
-                    addCommand("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
                 }
+                addCommand("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
             }
-            addCommand("astore_" + slotOf(variableDeclaration.getVarName().getName()));
+            if(variableDeclaration.getVarType() instanceof ListType){
+                addCommand("new List");
+                addCommand("dup");
+                addCommand("new java/util/ArrayList");
+                addCommand("dup");
+                addCommand("invokespecial java/util/ArrayList/<init>()V");
+                addCommand("invokespecial List/<init>(Ljava/util/ArrayList;)V");
+            }
+            var slotno = slotOf(variableDeclaration.getVarName().getName());
+            addCommand((slotno > 3 ? "astore " : "astore_") + slotno);
         }
         return null;
     }
@@ -250,7 +251,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(BlockStmt blockStmt) {
-        //todo - done
+        //todo
         for(Statement stmt: blockStmt.getStatements()){
             stmt.accept(this);
         }
@@ -265,8 +266,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(FunctionCallStmt functionCallStmt) {
-        //todo - done
-        addCommand(functionCallStmt.getFunctionCall().accept(this));
+        //todo
         return null;
     }
 
@@ -308,13 +308,13 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppendStmt listAppendStmt) {
-        //todo
+        addCommand(listAppendStmt.getListAppendExpr().accept(this));
         return null;
     }
 
     @Override
     public String visit(ListSizeStmt listSizeStmt) {
-        //todo
+        addCommand(listSizeStmt.getListSizeExpr().accept(this));
         return null;
     }
 
@@ -412,7 +412,8 @@ public class  CodeGenerator extends Visitor<String> {
             //todo
             return null;
         }
-        return "aload_"+slotOf(identifier.getName());
+        var slotno = slotOf(identifier.getName());
+        return (slotno > 3 ? "aload " : "aload_") + slotno;
     }
 
     @Override
@@ -431,14 +432,16 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListSize listSize){
-        //todo
-        return null;
+        addCommand(listSize.getArg().accept(this));
+        return "invokevirtual List/getSize()I";
     }
 
     @Override
     public String visit(ListAppend listAppend) {
         //todo
-        return null;
+        addCommand(listAppend.getListArg().accept(this));
+        addCommand(listAppend.getElementArg().accept(this));
+        return "invokevirtual List/addElement(Ljava/lang/Object;)V";
     }
 
     @Override
