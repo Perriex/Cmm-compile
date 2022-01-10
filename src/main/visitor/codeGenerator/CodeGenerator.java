@@ -171,6 +171,11 @@ public class  CodeGenerator extends Visitor<String> {
         }
 
         //todo
+        //addCommand(".method public static "+functionDeclaration.getFunctionName().getName()+"()V");//return and argument
+        //setHeaders();
+        //functionDeclaration.getBody().accept(this);
+        //setFooter();
+        //end
 
         SymbolTable.pop();
         return null;
@@ -214,14 +219,14 @@ public class  CodeGenerator extends Visitor<String> {
             if(variableDeclaration.getVarType() instanceof IntType) {
                 if(!hasDefault){
                     addCommand("iconst_0");
+                    addCommand("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
                 }
-                addCommand("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
             }
             if(variableDeclaration.getVarType() instanceof BoolType){
                 if(!hasDefault){
                     addCommand("iconst_0");
+                    addCommand("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
                 }
-                addCommand("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
             }
             addCommand("astore_" + slotOf(variableDeclaration.getVarName().getName()));
         }
@@ -241,7 +246,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(BlockStmt blockStmt) {
-        //todo
+        //todo - done
         for(Statement stmt: blockStmt.getStatements()){
             stmt.accept(this);
         }
@@ -256,7 +261,8 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(FunctionCallStmt functionCallStmt) {
-        //todo
+        //todo - done
+        addCommand(functionCallStmt.getFunctionCall().accept(this));
         return null;
     }
 
@@ -289,7 +295,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(VarDecStmt varDecStmt) {
-        //todo
+        //todo - done
         for(VariableDeclaration stmt: varDecStmt.getVars()){
             stmt.accept(this);
         }
@@ -310,7 +316,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(BinaryExpression binaryExpression) {
-        //todo
+        //todo ???
         Type expr = expressionTypeChecker.visit(binaryExpression);
         if(expr instanceof IntType){
             addCommand(binaryExpression.getFirstOperand().accept(this));
@@ -319,16 +325,16 @@ public class  CodeGenerator extends Visitor<String> {
             addCommand(binaryExpression.getSecondOperand().accept(this));
             addCommand("invokevirtual java/lang/Integer/intValue()I");
             if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
-                return "iadd";
+                return "iadd\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.sub){
-                return "isub";
+                return "isub\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.mult){
-                return "imul";
+                return "imul\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.div){
-                return "idiv";
+                return "idiv\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
             }
             // == => if_icmpeq
             //  > < =
@@ -343,10 +349,10 @@ public class  CodeGenerator extends Visitor<String> {
             // & | ~ =
 
             if(binaryExpression.getBinaryOperator() == BinaryOperator.and){
-                return "iand";
+                return "iand\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.or){
-                return "ior";
+                return "ior\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
             }
         }
         if(expr instanceof ListType){
@@ -394,6 +400,8 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(FunctionCall functionCall){
         //todo
+        ArrayList<Expression> args = new ArrayList<>();
+
         return null;
     }
 
@@ -412,13 +420,13 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(IntValue intValue) {
         //todo - done
-        return "ldc "+intValue.getConstant();
+        return "ldc "+intValue.getConstant() +'\n'+"invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
     }
 
     @Override
     public String visit(BoolValue boolValue) {
         //todo - done
-        return boolValue.getConstant() ? "ldc 1" : "ldc 0";
+        return (boolValue.getConstant() ? "ldc 1" : "ldc 0" )+ '\n' + "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
     }
 
     @Override

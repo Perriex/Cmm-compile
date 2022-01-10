@@ -1,5 +1,5 @@
 main()begin
-    bool a = true
-    bool b = false
-    bool c = a & b
+    int s = 1
+    int q = 2
+    int k = s + q
 end

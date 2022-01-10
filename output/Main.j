@@ -13,17 +13,18 @@
 		aload_0
 		invokespecial java/lang/Object/<init>()V
 		ldc 1
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_1
-		ldc 0
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		ldc 2
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_2
 		aload_1
-		invokevirtual java/lang/Boolean/booleanValue()Z
+		invokevirtual java/lang/Integer/intValue()I
 		aload_2
-		invokevirtual java/lang/Boolean/booleanValue()Z
-		iand
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		invokevirtual java/lang/Integer/intValue()I
+		iadd
+		dup
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_3
 		return
 .end method
