@@ -10,4 +10,4 @@ Generated: List.class
 Generated: Main.class
 
 ---------------------------Output---------------------------
-50100
+51810
