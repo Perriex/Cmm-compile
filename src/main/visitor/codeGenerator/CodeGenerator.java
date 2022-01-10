@@ -26,6 +26,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     private Boolean isInStruct = false;
     private ArrayList<String> arr = new ArrayList<>();
+    private int label = 0;
 
     private void copyFile(String toBeCopied, String toBePasted) {
         try {
@@ -130,16 +131,19 @@ public class  CodeGenerator extends Visitor<String> {
         isInStruct = true;
         for(StructDeclaration structDeclaration : program.getStructs()){
             arr.clear();
+            label = 0;
             structDeclaration.accept(this);
         }
         isInStruct = false;
 
         createFile("Main");
         arr.clear();
+        label = 0;
         program.getMain().accept(this);
 
         for (FunctionDeclaration functionDeclaration: program.getFunctions()){
             arr.clear();
+            label = 0;
             functionDeclaration.accept(this);
         }
         return null;
@@ -336,23 +340,59 @@ public class  CodeGenerator extends Visitor<String> {
             if(binaryExpression.getBinaryOperator() == BinaryOperator.div){
                 return "idiv\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
             }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.assign){
+                //do
+            }
             // == => if_icmpeq
-            //  > < =
+            //  =
         }
         if(expr instanceof BoolType){
-            addCommand(binaryExpression.getFirstOperand().accept(this));
-            addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
-
-            addCommand(binaryExpression.getSecondOperand().accept(this));
-            addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
             // == => if_icmpeq
             // & | ~ =
 
             if(binaryExpression.getBinaryOperator() == BinaryOperator.and){
+                addCommand(binaryExpression.getFirstOperand().accept(this));
+                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
+
+                addCommand(binaryExpression.getSecondOperand().accept(this));
+                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
                 return "iand\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.or){
+                addCommand(binaryExpression.getFirstOperand().accept(this));
+                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
+
+                addCommand(binaryExpression.getSecondOperand().accept(this));
+                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
                 return "ior\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.gt){
+                addCommand(binaryExpression.getFirstOperand().accept(this));
+                addCommand("invokevirtual java/lang/Integer/intValue()I");
+                label += 5;
+                addCommand(binaryExpression.getSecondOperand().accept(this));
+                addCommand("invokevirtual java/lang/Integer/intValue()I");
+
+                addCommand("if_icmple Label"+label);
+                label += 3;
+                addCommand("ldc 1\ngoto Label"+label);
+                addCommand("Label"+(label-3)+":");
+                addCommand("ldc 0\nLabel"+label+":");
+                return "dup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.lt){
+                addCommand(binaryExpression.getFirstOperand().accept(this));
+                addCommand("invokevirtual java/lang/Integer/intValue()I");
+                label += 4;
+                addCommand(binaryExpression.getSecondOperand().accept(this));
+                addCommand("invokevirtual java/lang/Integer/intValue()I");
+
+                addCommand("if_icmpge Label"+label);
+                label += 2;
+                addCommand("ldc 1\ngoto Label"+label);
+                addCommand("Label"+(label-2)+":");
+                addCommand("ldc 0\nLabel"+label+":");
+                return "dup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
             }
         }
         if(expr instanceof ListType){
