@@ -4,7 +4,6 @@
 .limit stack 128
 .limit locals 128
 		new Main
-		dup
 		invokespecial Main/<init>()V
 		return
 .end method
@@ -13,7 +12,9 @@
 .limit locals 128
 		aload_0
 		invokespecial java/lang/Object/<init>()V
-		iconst_2
+		ldc 1
+		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
 		astore_1
-		return
-.end method
+		ldc 0
+		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		astore_2

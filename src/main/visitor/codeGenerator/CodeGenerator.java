@@ -101,6 +101,10 @@ public class  CodeGenerator extends Visitor<String> {
 
     private int slotOf(String identifier) {
         //todo - done
+        if(identifier.equals("")){
+            arr.add("");
+            return arr.size();
+        }
         if(arr.contains(identifier)){
             return arr.indexOf(identifier)+1;
         }
@@ -189,7 +193,6 @@ public class  CodeGenerator extends Visitor<String> {
         addCommand("invokespecial java/lang/Object/<init>()V");
         mainDeclaration.getBody().accept(this);
         setFooter();
-
         //end
         SymbolTable.pop();
         return null;
@@ -203,10 +206,24 @@ public class  CodeGenerator extends Visitor<String> {
 
         }
         else{
+            boolean hasDefault= false;
             if(variableDeclaration.getDefaultValue() != null){
                 addCommand(variableDeclaration.getDefaultValue().accept(this));
-                addCommand("astore_"+slotOf(variableDeclaration.getVarName().getName()));
+                hasDefault = true;
             }
+            if(variableDeclaration.getVarType() instanceof IntType) {
+                if(!hasDefault){
+                    addCommand("iconst_0");
+                }
+                addCommand("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
+            }
+            if(variableDeclaration.getVarType() instanceof BoolType){
+                if(!hasDefault){
+                    addCommand("iconst_0");
+                }
+                addCommand("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
+            }
+            addCommand("astore_" + slotOf(variableDeclaration.getVarName().getName()));
         }
         return null;
     }
@@ -294,6 +311,44 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(BinaryExpression binaryExpression) {
         //todo
+        addCommand(binaryExpression.getFirstOperand().accept(this));
+        addCommand(binaryExpression.getSecondOperand().accept(this));
+        Type expr = expressionTypeChecker.visit(binaryExpression);
+        if(expr instanceof IntType){
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
+                return "iadd";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.sub){
+                return "isub";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.mult){
+                return "imul";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.div){
+                return "idiv";
+            }
+            // == => if_icmpeq
+            //  > <
+        }
+        if(expr instanceof BoolType){
+            // == => if_icmpeq
+            // & | ~
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
+                return "iand";
+            }
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.or){
+                return "ior";
+            }
+        }
+        if(expr instanceof ListType){
+            return null;
+        }
+        if(expr instanceof FptrType){
+            // == => if_acmpeq
+        }
+        if(expr instanceof StructType){
+            // == => if_acmpeq
+        }
         return null;
     }
 
@@ -341,13 +396,13 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(IntValue intValue) {
         //todo - done
-        return "iconst_"+intValue.getConstant();
+        return "ldc "+intValue.getConstant();
     }
 
     @Override
     public String visit(BoolValue boolValue) {
-        //todo
-        return null;
+        //todo - done
+        return boolValue.getConstant() ? "ldc 1" : "ldc 0";
     }
 
     @Override

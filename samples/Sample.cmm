@@ -1,3 +1,5 @@
 main()begin
-    int c = 2;
+    bool a = true
+    bool b = false
+    bool c = a | b
 end
