@@ -323,76 +323,60 @@ public class  CodeGenerator extends Visitor<String> {
         //todo ???
         Type expr = expressionTypeChecker.visit(binaryExpression);
         if(expr instanceof IntType){
-            addCommand(binaryExpression.getFirstOperand().accept(this));
-            addCommand("invokevirtual java/lang/Integer/intValue()I");
-
-            addCommand(binaryExpression.getSecondOperand().accept(this));
-            addCommand("invokevirtual java/lang/Integer/intValue()I");
+            String intConv = "\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
+            addCommand(binaryExpression.getFirstOperand().accept(this)+'\n'+
+                    "invokevirtual java/lang/Integer/intValue()I" +'\n'+
+                    binaryExpression.getSecondOperand().accept(this) +'\n'+
+                    "invokevirtual java/lang/Integer/intValue()I");
             if(binaryExpression.getBinaryOperator() == BinaryOperator.add){
-                return "iadd\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
+                return "iadd"+intConv;
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.sub){
-                return "isub\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
+                return "isub"+intConv;
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.mult){
-                return "imul\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
+                return "imul"+intConv;
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.div){
-                return "idiv\ndup\ninvokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
+                return "idiv"+intConv;
             }
             if(binaryExpression.getBinaryOperator() == BinaryOperator.assign){
                 //do
             }
             // == => if_icmpeq
-            //  =
+            // =
         }
         if(expr instanceof BoolType){
             // == => if_icmpeq
             // & | ~ =
+            String boolConv = "\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.and ||
+                    binaryExpression.getBinaryOperator() == BinaryOperator.or){
+                addCommand(binaryExpression.getFirstOperand().accept(this)+'\n'+
+                        "invokevirtual java/lang/Boolean/booleanValue()Z" +'\n'+
+                        binaryExpression.getSecondOperand().accept(this) +'\n'+
+                        "invokevirtual java/lang/Boolean/booleanValue()Z");
 
-            if(binaryExpression.getBinaryOperator() == BinaryOperator.and){
-                addCommand(binaryExpression.getFirstOperand().accept(this));
-                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
-
-                addCommand(binaryExpression.getSecondOperand().accept(this));
-                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
-                return "iand\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
+                return (binaryExpression.getBinaryOperator() == BinaryOperator.and ? "iand" : "ior")+boolConv;
             }
-            if(binaryExpression.getBinaryOperator() == BinaryOperator.or){
-                addCommand(binaryExpression.getFirstOperand().accept(this));
-                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
-
-                addCommand(binaryExpression.getSecondOperand().accept(this));
-                addCommand("invokevirtual java/lang/Boolean/booleanValue()Z");
-                return "ior\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
-            }
-            if(binaryExpression.getBinaryOperator() == BinaryOperator.gt){
-                addCommand(binaryExpression.getFirstOperand().accept(this));
-                addCommand("invokevirtual java/lang/Integer/intValue()I");
+            if(binaryExpression.getBinaryOperator() == BinaryOperator.gt ||
+                    binaryExpression.getBinaryOperator() == BinaryOperator.lt){
+                addCommand(binaryExpression.getFirstOperand().accept(this)+'\n'+
+                        "invokevirtual java/lang/Integer/intValue()I" +'\n'+
+                        binaryExpression.getSecondOperand().accept(this) +'\n'+
+                        "invokevirtual java/lang/Integer/intValue()I");
                 label += 5;
-                addCommand(binaryExpression.getSecondOperand().accept(this));
-                addCommand("invokevirtual java/lang/Integer/intValue()I");
-
-                addCommand("if_icmple Label"+label);
+                if(binaryExpression.getBinaryOperator() == BinaryOperator.gt) {
+                    addCommand("if_icmple Label" + label);
+                }
+                else{
+                    addCommand("if_icmpge Label"+label);
+                }
                 label += 3;
                 addCommand("ldc 1\ngoto Label"+label);
                 addCommand("Label"+(label-3)+":");
                 addCommand("ldc 0\nLabel"+label+":");
-                return "dup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
-            }
-            if(binaryExpression.getBinaryOperator() == BinaryOperator.lt){
-                addCommand(binaryExpression.getFirstOperand().accept(this));
-                addCommand("invokevirtual java/lang/Integer/intValue()I");
-                label += 4;
-                addCommand(binaryExpression.getSecondOperand().accept(this));
-                addCommand("invokevirtual java/lang/Integer/intValue()I");
-
-                addCommand("if_icmpge Label"+label);
-                label += 2;
-                addCommand("ldc 1\ngoto Label"+label);
-                addCommand("Label"+(label-2)+":");
-                addCommand("ldc 0\nLabel"+label+":");
-                return "dup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
+                return boolConv;
             }
         }
         if(expr instanceof ListType){

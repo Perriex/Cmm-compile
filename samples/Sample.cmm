@@ -1,5 +1,5 @@
 main()begin
     int s = 2
     int q = 4
-    bool k = s < 5
+    bool k = s > 4
 end

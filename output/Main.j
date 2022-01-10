@@ -12,23 +12,17 @@
 .limit locals 128
 		aload_0
 		invokespecial java/lang/Object/<init>()V
-		ldc 2
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		ldc 1
+		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
 		astore_1
-		ldc 4
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		iconst_0
+		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
 		astore_2
 		aload_1
-		invokevirtual java/lang/Integer/intValue()I
-		ldc 5
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
-		invokevirtual java/lang/Integer/intValue()I
-		if_icmpge Label4
-		ldc 1
-		goto Label6
-		Label4:
-		ldc 0
-		Label6:
+		invokevirtual java/lang/Boolean/booleanValue()Z
+		aload_2
+		invokevirtual java/lang/Boolean/booleanValue()Z
+		ior
 		dup
 		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
 		astore_3
