@@ -509,7 +509,7 @@ public class CodeGenerator extends Visitor<String> {
     public String visit(ListSizeStmt listSizeStmt) {
         // todo - icheck -- same as pdf
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
-       // addCommand("pop");
+       addCommand("pop");
         return null;
     }
 
@@ -520,17 +520,16 @@ public class CodeGenerator extends Visitor<String> {
         Type expr = binaryExpression.accept(expressionTypeChecker);
         BinaryOperator opr = binaryExpression.getBinaryOperator();
         Type rvalue = binaryExpression.getSecondOperand().accept(expressionTypeChecker); // for list assign
-        if(expr instanceof IntType){
+        if(expr instanceof IntType || expr instanceof BoolType){
             sb.append(binaryExpression.getSecondOperand().accept(this));
             if(opr != BinaryOperator.assign){
-                sb.append("\ninvokevirtual java/lang/Integer/intValue()I\n");
+                sb.append("\n"+noneToPrimitive(expr)+"\n");
                 sb.append(binaryExpression.getFirstOperand().accept(this));
-                sb.append("\ninvokevirtual java/lang/Integer/intValue()I\n");
+                sb.append("\n"+noneToPrimitive(expr)+"\n");
             }
             if(opr == BinaryOperator.add){
                 sb.append("iadd");
                 sb.append("\ndup\n"+primitiveToNone(expr));
-                return sb.toString();
             }
             if(opr == BinaryOperator.sub){
                 sb.append("isub");
@@ -544,8 +543,59 @@ public class CodeGenerator extends Visitor<String> {
                 sb.append("idiv");
                 sb.append("\ndup\n"+primitiveToNone(expr));
             }
+            if(opr == BinaryOperator.assign){ //check lvalue
+                sb.append("\ndup\n");
+                Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
+                if(isInAssignmentStmt) {
+                    var slotno = slotOf(lvalue.getName());
+                    sb.append((slotno > 3 ? "astore " : "astore_") + slotno);
+                }
+            }
+            if(opr == BinaryOperator.and || opr == BinaryOperator.or){
+                sb.append(opr == BinaryOperator.and ? "iand" : "ior");
+                sb.append("\ndup\n"+primitiveToNone(expr));
+            }
+            if(opr == BinaryOperator.gt || opr == BinaryOperator.lt){
+                label += 1;
+                sb.append(opr == BinaryOperator.gt ? "if_icmple Label" + label : "if_icmpge Label" + label);
+                sb.append("\n");
+                label += 1;
+                sb.append("iconst_1\ngoto Label" + label);
+                sb.append("\n");
+                sb.append("Label" + (label - 1) + ":\n");
+                sb.append("iconst_0\nLabel" + label + ":\n");
+                sb.append(primitiveToNone(expr));
+            }
+            if(opr == BinaryOperator.eq){
+                if(rvalue instanceof IntType || rvalue instanceof BoolType){
+                    label += 1;
+                    sb.append("if_icmpeq Label" + label);
+                    sb.append("\n");
+                    label += 1;
+                    sb.append("iconst_0\ngoto Label" + label);
+                    sb.append("\n");
+                    sb.append("Label" + (label - 1) + ":\n");
+                    sb.append("iconst_1\nLabel" + label + ":\n");
+                    sb.append("dup\n"+primitiveToNone(expr));
+                }
+                else{
+                    label += 1;
+                    sb.append("if_acmpeq Label" + label);
+                    sb.append("\n");
+                    label += 1;
+                    sb.append("iconst_0\ngoto Label" + label);
+                    sb.append("\n");
+                    sb.append("Label" + (label - 1) + ":\n");
+                    sb.append("iconst_1\nLabel" + label + ":\n");
+                    sb.append("dup\n"+primitiveToNone(expr));
+                }
+            }
+        }
+        if(expr instanceof ListType){
             if(opr == BinaryOperator.assign){
-                //sb.append("\ndup\n");
+                sb.append(binaryExpression.getSecondOperand().accept(this));
+                sb.append("\ninvokespecial List/<init>(LList;)V");
+                sb.append("\ndup\n");
                 Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
                 if(isInAssignmentStmt) {
                     var slotno = slotOf(lvalue.getName());

@@ -133,3 +133,24 @@ Label0:
 Label13:
   13: return
 .end method
+
+.method public setElement(ILjava/lang/Object;)V
+  .limit stack 32
+  .limit locals 32
+  .var 0 is this LList; from Label0 to Label14
+  .var 1 is index I from Label0 to Label14
+  .var 2 is o Ljava/lang/Object; from Label0 to Label14
+Label0:
+  .line 29
+  0: aload_0
+  1: getfield List/elements Ljava/util/ArrayList;
+  4: iload_1
+  5: aload_0
+  6: aload_2
+  7: invokevirtual List/getNewObject(Ljava/lang/Object;)Ljava/lang/Object;
+  10: invokevirtual java/util/ArrayList/set(ILjava/lang/Object;)Ljava/lang/Object;
+  13: pop
+Label14:
+  .line 30
+  14: return
+.end method
