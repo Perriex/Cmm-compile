@@ -426,7 +426,7 @@ public class CodeGenerator extends Visitor<String> {
     public String visit(ListSizeStmt listSizeStmt) {
         // todo - icheck -- same as pdf
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
-        addCommand("pop");
+       // addCommand("pop");
         return null;
     }
 
@@ -462,7 +462,7 @@ public class CodeGenerator extends Visitor<String> {
                 sb.append("\ndup\n"+primitiveToNone(expr));
             }
             if(opr == BinaryOperator.assign){
-                sb.append("\ndup\n");
+                //sb.append("\ndup\n");
                 Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
                 if(isInAssignmentStmt) {
                     var slotno = slotOf(lvalue.getName());
@@ -497,22 +497,24 @@ public class CodeGenerator extends Visitor<String> {
     @Override
     public String visit(Identifier identifier) {
         Type idType = expressionTypeChecker.visit(identifier);
+        var sb = new StringBuilder();
         if (idType instanceof FptrType) {
             if (!arr.contains(identifier.getName())) {
-                addCommand("new Fptr");
-                addCommand("dup");
-                addCommand("aload_0");
-                addCommand("ldc \""+identifier.getName()+"\"");
-                addCommand("invokespecial Fptr/<init>(Ljava/lang/Object;Ljava/lang/String;)V");
+                sb.append("new Fptr\n");
+                sb.append("dup\n");
+                sb.append("aload_0\n");
+                sb.append("ldc \""+identifier.getName()+"\"\n");
+                sb.append("invokespecial Fptr/<init>(Ljava/lang/Object;Ljava/lang/String;)V\n");
                 var createSlotNo = slotOf(identifier.getName());
-                addCommand((createSlotNo > 3 ? "astore " : "astore_") + createSlotNo);
+                sb.append((createSlotNo > 3 ? "astore " : "astore_") + createSlotNo+"\n");
             }
         }
         var slotNo = slotOf(identifier.getName());
-        addCommand((slotNo > 3 ? "aload " : "aload_") + slotNo);
-        return idType instanceof FptrType ? "invokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;\n"
+        sb.append((slotNo > 3 ? "aload " : "aload_") + slotNo);
+        sb.append( idType instanceof FptrType ? "invokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;\n"
                 + cast(((FptrType)idType).getReturnType()) + "\n"
-                : "";
+                : "");
+        return sb.toString();
     }
 
     @Override

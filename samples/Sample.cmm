@@ -2,11 +2,7 @@ struct t
     int b
 
 main()begin
-    int a
-    int b
-    b = a = 4 - 1
-
-    a = 3
-    b = 7
-
+int b
+int c
+    int a = b + c
 end
