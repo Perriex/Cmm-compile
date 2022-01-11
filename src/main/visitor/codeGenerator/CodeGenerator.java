@@ -5,7 +5,6 @@ import main.ast.nodes.declaration.*;
 import main.ast.nodes.declaration.struct.*;
 import main.ast.nodes.expression.*;
 import main.ast.nodes.expression.operators.*;
-import main.ast.nodes.expression.values.*;
 import main.ast.nodes.expression.values.primitive.*;
 import main.ast.nodes.statement.*;
 import main.ast.types.*;
@@ -416,8 +415,8 @@ public class CodeGenerator extends Visitor<String> {
         return null;
     }
 
-    @Override
-    public String visit(LoopStmt loopStmt) {
+    public void visitWhile(LoopStmt loopStmt)
+    {
         String l1 = getFreshLabel(), l2 = getFreshLabel();
         addCommand(l1 + ":");
         addCommand(loopStmt.getCondition().accept(this));
@@ -426,6 +425,26 @@ public class CodeGenerator extends Visitor<String> {
         loopStmt.getBody().accept(this);
         addCommand("goto " + l1);
         addCommand(l2 + ":");
+    }
+
+    public void visitDoWhile(LoopStmt loopStmt)
+    {
+        String l1 = getFreshLabel();
+        addCommand(l1 + ":");
+        loopStmt.getBody().accept(this);
+        addCommand(loopStmt.getCondition().accept(this));
+        addCommand(noneToPrimitive(new BoolType()));
+        addCommand("ifne " + l1);
+    }
+
+    @Override
+    public String visit(LoopStmt loopStmt) {
+        if(loopStmt.getIsDoWhile()){
+            visitDoWhile(loopStmt);
+        }
+        else {
+            visitWhile(loopStmt);
+        }
         return null;
     }
 
