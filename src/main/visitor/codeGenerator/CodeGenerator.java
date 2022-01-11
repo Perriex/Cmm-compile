@@ -521,11 +521,11 @@ public class CodeGenerator extends Visitor<String> {
         BinaryOperator opr = binaryExpression.getBinaryOperator();
         Type rvalue = binaryExpression.getSecondOperand().accept(expressionTypeChecker); // for list assign
         if(expr instanceof IntType || expr instanceof BoolType){
-            sb.append(binaryExpression.getSecondOperand().accept(this));
+            sb.append(binaryExpression.getFirstOperand().accept(this));
             if(opr != BinaryOperator.assign){
-                sb.append("\n"+noneToPrimitive(expr)+"\n");
-                sb.append(binaryExpression.getFirstOperand().accept(this));
-                sb.append("\n"+noneToPrimitive(expr)+"\n");
+                sb.append("\n"+noneToPrimitive(rvalue)+"\n");
+                sb.append(binaryExpression.getSecondOperand().accept(this));
+                sb.append("\n"+noneToPrimitive(rvalue)+"\n");
             }
             if(opr == BinaryOperator.add){
                 sb.append("iadd");
@@ -557,14 +557,14 @@ public class CodeGenerator extends Visitor<String> {
             }
             if(opr == BinaryOperator.gt || opr == BinaryOperator.lt){
                 label += 1;
-                sb.append(opr == BinaryOperator.gt ? "if_icmple Label" + label : "if_icmpge Label" + label);
+                sb.append(opr == BinaryOperator.gt ? "if_icmpgt Label" + label : "if_icmplt Label" + label);
                 sb.append("\n");
                 label += 1;
-                sb.append("iconst_1\ngoto Label" + label);
+                sb.append("iconst_0\ngoto Label" + label);
                 sb.append("\n");
                 sb.append("Label" + (label - 1) + ":\n");
-                sb.append("iconst_0\nLabel" + label + ":\n");
-                sb.append(primitiveToNone(expr));
+                sb.append("iconst_1\nLabel" + label + ":\n");
+                sb.append("dup\n"+primitiveToNone(expr));
             }
             if(opr == BinaryOperator.eq){
                 if(rvalue instanceof IntType || rvalue instanceof BoolType){
