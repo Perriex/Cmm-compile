@@ -193,7 +193,7 @@ public class  CodeGenerator extends Visitor<String> {
         //todo - check
         StringBuilder prototype = new StringBuilder(".method public static " + functionDeclaration.getFunctionName().getName() + "(");
         for (VariableDeclaration arg : functionDeclaration.getArgs()) {
-            prototype.append(getJasminType(arg.getVarType()));
+            prototype.append(getJasminType(arg.getVarType())); // arguments are none primitive!
         }
         prototype.append(")").append(getJasminType(functionDeclaration.getReturnType()));
         addCommand(prototype.toString());
