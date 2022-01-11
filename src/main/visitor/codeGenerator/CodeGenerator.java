@@ -593,6 +593,8 @@ public class CodeGenerator extends Visitor<String> {
         }
         if(expr instanceof ListType){
             if(opr == BinaryOperator.assign){
+                sb.append("\nnew List");
+                sb.append("\ndup\n");
                 sb.append(binaryExpression.getSecondOperand().accept(this));
                 sb.append("\ninvokespecial List/<init>(LList;)V");
                 sb.append("\ndup\n");
