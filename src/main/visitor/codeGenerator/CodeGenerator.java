@@ -30,9 +30,9 @@ public class CodeGenerator extends Visitor<String> {
     private String currentStructName = "";
     private ArrayList<String> arr = new ArrayList<>();
     private int label = 0;
-    private String getFreshLabel()
-    {
-        return "label"+label++;
+
+    private String getFreshLabel() {
+        return "label" + label++;
     }
 
     private void copyFile(String toBeCopied, String toBePasted) {
@@ -59,12 +59,11 @@ public class CodeGenerator extends Visitor<String> {
         try {
             File directory = new File(this.outputPath);
             File[] files = directory.listFiles();
-            if(files != null)
+            if (files != null)
                 for (File file : files)
                     file.delete();
             directory.mkdir();
-        }
-        catch(SecurityException e) {//unreachable
+        } catch (SecurityException e) {//unreachable
 
         }
         copyFile(jasminPath, this.outputPath + "jasmin.jar");
@@ -85,9 +84,9 @@ public class CodeGenerator extends Visitor<String> {
     private void addCommand(String command) {
         try {
             command = String.join("\n\t\t", command.split("\n"));
-            if(command.startsWith("Label_"))
+            if (command.startsWith("Label_"))
                 this.currentFile.write("\t" + command + "\n");
-            else if(command.startsWith("."))
+            else if (command.startsWith("."))
                 this.currentFile.write(command + "\n");
             else
                 this.currentFile.write("\t\t" + command + "\n");
@@ -128,7 +127,7 @@ public class CodeGenerator extends Visitor<String> {
         if (type instanceof FptrType)
             return "LFtpr;";
         if (type instanceof StructType)
-            return "L" + ((StructType) type).getStructName() + ";";
+            return "L" + ((StructType) type).getStructName().getName() + ";";
         return "V";
     }
 
@@ -151,16 +150,16 @@ public class CodeGenerator extends Visitor<String> {
         return "\n";
     }
 
-    private String noneToPrimitive(Type var){
-        if(var instanceof IntType){
+    private String noneToPrimitive(Type var) {
+        if (var instanceof IntType) {
             return "invokevirtual java/lang/Integer/intValue()I";
-        }else if(var instanceof BoolType){
+        } else if (var instanceof BoolType) {
             return "invokevirtual java/lang/Boolean/booleanValue()Z\n";
         }
         return "\n";
     }
 
-    private String getType(Type variableType){
+    private String getType(Type variableType) {
         if (variableType instanceof IntType) {
             return "java/lang/Integer";
         }
@@ -168,7 +167,7 @@ public class CodeGenerator extends Visitor<String> {
             return "java/lang/Boolean";
         }
         if (variableType instanceof ListType) {
-            return  "List";
+            return "List";
         }
         if (variableType instanceof FptrType) {
             return "Fptr";
@@ -181,10 +180,10 @@ public class CodeGenerator extends Visitor<String> {
         return "";
     }
 
-    private String cast(Type type)
-    {
-        var typeName = getJasminType(type);
-        return "checkcast " + typeName.substring(1, typeName.length() - 1);
+    private String cast(Type type) {
+        if(!Objects.equals(getType(type), ""))
+            return "checkcast " + getType(type);
+        return "";
     }
 
     @Override
@@ -221,7 +220,7 @@ public class CodeGenerator extends Visitor<String> {
         createFile(structDeclaration.getStructName().getName());
         currentStructName = structDeclaration.getStructName().getName();
         //todo - not complete
-        addCommand(".class public "+structDeclaration.getStructName().getName());
+        addCommand(".class public " + structDeclaration.getStructName().getName());
         addCommand(".super java/lang/Object");
 
         isInStruct = true;
@@ -252,6 +251,7 @@ public class CodeGenerator extends Visitor<String> {
         //todo - check
         StringBuilder prototype = new StringBuilder(".method public " + functionDeclaration.getFunctionName().getName() + "(");
         for (VariableDeclaration arg : functionDeclaration.getArgs()) {
+            slotOf(arg.getVarName().getName());
             prototype.append(getJasminType(arg.getVarType())); // arguments are none primitive!
         }
         prototype.append(")").append(getJasminType(functionDeclaration.getReturnType()));
@@ -259,7 +259,6 @@ public class CodeGenerator extends Visitor<String> {
         setHeaders();
         functionDeclaration.getBody().accept(this);
         setFooter();
-
         SymbolTable.pop();
         return null;
     }
@@ -285,17 +284,17 @@ public class CodeGenerator extends Visitor<String> {
         return null;
     }
 
-    private void setField(VariableDeclaration variableDeclaration, String defaultValue){
+    private void setField(VariableDeclaration variableDeclaration, String defaultValue) {
         addCommand("aload_0");
-        if(variableDeclaration.getDefaultValue() == null)
+        if (variableDeclaration.getDefaultValue() == null)
             addCommand(defaultValue);
         else
             addCommand(variableDeclaration.getDefaultValue().accept(this));
-        addCommand("putfield "+ currentStructName + "/" + variableDeclaration.getVarName().getName() + " " + getJasminType(variableDeclaration.getVarType()));
+        addCommand("putfield " + currentStructName + "/" + variableDeclaration.getVarName().getName() + " " + getJasminType(variableDeclaration.getVarType()));
     }
 
-    private String makeList(){
-        var sb = new StringBuilder("new List");
+    private String makeList() {
+        var sb = new StringBuilder("\nnew List");
         sb.append("\ndup");
         sb.append("\nnew java/util/ArrayList");
         sb.append("\ndup");
@@ -329,10 +328,10 @@ public class CodeGenerator extends Visitor<String> {
         }
         else if (isInStructInit) {
             if (variableType instanceof IntType) {
-                setField(variableDeclaration, "ldc 0\n"+primitiveToNone(new IntType()));
+                setField(variableDeclaration, "ldc 0\n" + primitiveToNone(new IntType()));
             }
             if (variableType instanceof BoolType) {
-                setField(variableDeclaration, "ldc 0\n"+primitiveToNone(new BoolType()));
+                setField(variableDeclaration, "ldc 0\n" + primitiveToNone(new BoolType()));
             }
             if (variableType instanceof ListType) {
                 setField(variableDeclaration, makeList());
@@ -341,12 +340,11 @@ public class CodeGenerator extends Visitor<String> {
                 setField(variableDeclaration, "aconst_null");
             }
             if (variableType instanceof StructType) {
-                setField(variableDeclaration, "new "+((StructType) variableType).getStructName()
-                        +"\ndup"
-                        +"\ninvokespecial "+((StructType) variableType).getStructName()+"/<init>()V");
+                setField(variableDeclaration, "new " + ((StructType) variableType).getStructName().getName()
+                        + "\ndup"
+                        + "\ninvokespecial " + ((StructType) variableType).getStructName().getName() + "/<init>()V");
             }
-        }
-        else {
+        } else {
             if (variableDeclaration.getDefaultValue() != null) {
                 addCommand(variableDeclaration.getDefaultValue().accept(this));
             } else {
@@ -381,14 +379,14 @@ public class CodeGenerator extends Visitor<String> {
     }
 
     private boolean isInAssignmentStmt = false;
+
     @Override
     public String visit(AssignmentStmt assignmentStmt) {
         //todo
-        BinaryExpression node = new BinaryExpression(assignmentStmt.getLValue(),assignmentStmt.getRValue(),BinaryOperator.assign);
+        BinaryExpression node = new BinaryExpression(assignmentStmt.getLValue(), assignmentStmt.getRValue(), BinaryOperator.assign);
         isInAssignmentStmt = true;
         addCommand(node.accept(this));
         isInAssignmentStmt = false;
-        addCommand("pop");
         return null;
     }
 
@@ -408,11 +406,11 @@ public class CodeGenerator extends Visitor<String> {
         addCommand(noneToPrimitive(new BoolType()));
         addCommand("ifeq " + l1);
         conditionalStmt.getThenBody().accept(this);
-        if(hasElse){
+        if (hasElse) {
             addCommand("goto " + l2);
         }
         addCommand(l1 + ":");
-        if(hasElse) {
+        if (hasElse) {
             conditionalStmt.getElseBody().accept(this);
             addCommand(l2 + ":");
         }
@@ -456,8 +454,7 @@ public class CodeGenerator extends Visitor<String> {
         return null;
     }
 
-    public void visitWhile(LoopStmt loopStmt)
-    {
+    public void visitWhile(LoopStmt loopStmt) {
         String l1 = getFreshLabel(), l2 = getFreshLabel();
         addCommand(l1 + ":");
         addCommand(loopStmt.getCondition().accept(this));
@@ -468,8 +465,7 @@ public class CodeGenerator extends Visitor<String> {
         addCommand(l2 + ":");
     }
 
-    public void visitDoWhile(LoopStmt loopStmt)
-    {
+    public void visitDoWhile(LoopStmt loopStmt) {
         String l1 = getFreshLabel();
         addCommand(l1 + ":");
         loopStmt.getBody().accept(this);
@@ -480,10 +476,9 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(LoopStmt loopStmt) {
-        if(loopStmt.getIsDoWhile()){
+        if (loopStmt.getIsDoWhile()) {
             visitDoWhile(loopStmt);
-        }
-        else {
+        } else {
             visitWhile(loopStmt);
         }
         return null;
@@ -510,7 +505,7 @@ public class CodeGenerator extends Visitor<String> {
     public String visit(ListSizeStmt listSizeStmt) {
         // todo - icheck -- same as pdf
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
-       addCommand("pop");
+        addCommand("pop");
         return null;
     }
 
@@ -521,42 +516,33 @@ public class CodeGenerator extends Visitor<String> {
         Type expr = binaryExpression.accept(expressionTypeChecker);
         BinaryOperator opr = binaryExpression.getBinaryOperator();
         Type rvalue = binaryExpression.getSecondOperand().accept(expressionTypeChecker); // for list assign
-        if(expr instanceof IntType || expr instanceof BoolType){
+        if((expr instanceof IntType || expr instanceof BoolType) && opr != BinaryOperator.assign){
             sb.append(binaryExpression.getFirstOperand().accept(this));
-            if(opr != BinaryOperator.assign){
-                sb.append("\n"+noneToPrimitive(rvalue)+"\n");
-                sb.append(binaryExpression.getSecondOperand().accept(this));
-                sb.append("\n"+noneToPrimitive(rvalue)+"\n");
-            }
-            if(opr == BinaryOperator.add){
+            sb.append("\n"+noneToPrimitive(rvalue)+"\n");
+            sb.append(binaryExpression.getSecondOperand().accept(this));
+            sb.append("\n"+noneToPrimitive(rvalue)+"\n");
+
+            if (opr == BinaryOperator.add) {
                 sb.append("iadd");
-                sb.append("\ndup\n"+primitiveToNone(expr));
+                sb.append("\n" + primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.sub){
+            if (opr == BinaryOperator.sub) {
                 sb.append("isub");
-                sb.append("\ndup\n"+primitiveToNone(expr));
+                sb.append("\n" + primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.mult){
+            if (opr == BinaryOperator.mult) {
                 sb.append("imul");
-                sb.append("\ndup\n"+primitiveToNone(expr));
+                sb.append("\n" + primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.div){
+            if (opr == BinaryOperator.div) {
                 sb.append("idiv");
-                sb.append("\ndup\n"+primitiveToNone(expr));
+                sb.append("\n" + primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.assign){ //check lvalue
-                sb.append("\ndup\n");
-                Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
-                if(isInAssignmentStmt) {
-                    var slotno = slotOf(lvalue.getName());
-                    sb.append((slotno > 3 ? "astore " : "astore_") + slotno);
-                }
-            }
-            if(opr == BinaryOperator.and || opr == BinaryOperator.or){
+            if (opr == BinaryOperator.and || opr == BinaryOperator.or) {
                 sb.append(opr == BinaryOperator.and ? "iand" : "ior");
-                sb.append("\ndup\n"+primitiveToNone(expr));
+                sb.append("\n" + primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.gt || opr == BinaryOperator.lt){
+            if (opr == BinaryOperator.gt || opr == BinaryOperator.lt) {
                 label += 1;
                 sb.append(opr == BinaryOperator.gt ? "if_icmpgt Label" + label : "if_icmplt Label" + label);
                 sb.append("\n");
@@ -565,10 +551,10 @@ public class CodeGenerator extends Visitor<String> {
                 sb.append("\n");
                 sb.append("Label" + (label - 1) + ":\n");
                 sb.append("iconst_1\nLabel" + label + ":\n");
-                sb.append("dup\n"+primitiveToNone(expr));
+                sb.append("\n"+primitiveToNone(expr));
             }
-            if(opr == BinaryOperator.eq){
-                if(rvalue instanceof IntType || rvalue instanceof BoolType){
+            if (opr == BinaryOperator.eq) {
+                if (rvalue instanceof IntType || rvalue instanceof BoolType) {
                     label += 1;
                     sb.append("if_icmpeq Label" + label);
                     sb.append("\n");
@@ -577,9 +563,8 @@ public class CodeGenerator extends Visitor<String> {
                     sb.append("\n");
                     sb.append("Label" + (label - 1) + ":\n");
                     sb.append("iconst_1\nLabel" + label + ":\n");
-                    sb.append("dup\n"+primitiveToNone(expr));
-                }
-                else{
+                    sb.append("\n" + primitiveToNone(expr));
+                } else {
                     label += 1;
                     sb.append("if_acmpeq Label" + label);
                     sb.append("\n");
@@ -588,24 +573,56 @@ public class CodeGenerator extends Visitor<String> {
                     sb.append("\n");
                     sb.append("Label" + (label - 1) + ":\n");
                     sb.append("iconst_1\nLabel" + label + ":\n");
-                    sb.append("dup\n"+primitiveToNone(expr));
+                    sb.append("\n" + primitiveToNone(expr));
                 }
             }
         }
-        if(expr instanceof ListType){
-            if(opr == BinaryOperator.assign){
+        if (opr == BinaryOperator.assign) { //check lvalue
+            var ltype = binaryExpression.getFirstOperand().accept(expressionTypeChecker);
+            if (binaryExpression.getFirstOperand() instanceof StructAccess) {
+                var type = (StructType) ((StructAccess) binaryExpression.getFirstOperand()).getInstance().accept(expressionTypeChecker);
+                var element = ((StructAccess) binaryExpression.getFirstOperand()).getElement();
+                sb.append(((StructAccess) binaryExpression.getFirstOperand()).getInstance().accept(this));
+                sb.append("\n");
+                sb.append(binaryExpression.getSecondOperand().accept(this));
+                sb.append("\n");
+                sb.append("putfield " + type.getStructName().getName() + "/" + element.getName() + " " + getJasminType(ltype));
+            }
+            if (binaryExpression.getFirstOperand() instanceof ListAccessByIndex) {
+                sb.append("\n");
+                sb.append(((ListAccessByIndex) binaryExpression.getFirstOperand()).getInstance().accept(this));
+                sb.append("\n");
+                sb.append(((ListAccessByIndex) binaryExpression.getFirstOperand()).getIndex().accept(this));
+                sb.append("\n");
+                sb.append(noneToPrimitive(new IntType()));
+                sb.append("\n");
                 sb.append("\nnew List");
                 sb.append("\ndup\n");
                 sb.append(binaryExpression.getSecondOperand().accept(this));
-                sb.append("\ninvokespecial List/<init>(LList;)V");
-                sb.append("\ndup\n");
-                Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
-                if(isInAssignmentStmt) {
+                sb.append("\n");
+                sb.append("invokevirtual List/setElement(ILjava/lang/Object;)V");
+            }
+
+            if (binaryExpression.getFirstOperand() instanceof Identifier) {
+                if (ltype instanceof ListType) {
+                    sb.append("\n");
+                    sb.append("new List");
+                    sb.append("\ndup\n");
+                    sb.append(binaryExpression.getSecondOperand().accept(this));
+                    sb.append("\ninvokespecial List/<init>(LList;)V");
+                } else {
+                    sb.append(binaryExpression.getSecondOperand().accept(this));
+                }
+
+                Identifier lvalue = (Identifier) binaryExpression.getFirstOperand();
+                if (isInAssignmentStmt) {
                     var slotno = slotOf(lvalue.getName());
+                    sb.append("\n");
                     sb.append((slotno > 3 ? "astore " : "astore_") + slotno);
                 }
             }
         }
+
         return sb.toString();
     }
 
@@ -625,7 +642,7 @@ public class CodeGenerator extends Visitor<String> {
         var sb = new StringBuilder();
         sb.append(structAccess.getInstance().accept(this));
         sb.append("\n");
-        sb.append("getfield "+nameStruct+"/"+nameField+" L"+getType(typeField)+";");
+        sb.append("getfield " + nameStruct + "/" + nameField + " L" + getType(typeField) + ";");
         sb.append("\n");
         return sb.toString();
     }
@@ -636,15 +653,16 @@ public class CodeGenerator extends Visitor<String> {
         var sb = new StringBuilder();
         if (idType instanceof FptrType) {
             if (!arr.contains(identifier.getName())) {
-                sb.append("new Fptr\n");
+                sb.append("\nnew Fptr\n");
                 sb.append("dup\n");
                 sb.append("aload_0\n");
-                sb.append("ldc \""+identifier.getName()+"\"\n");
+                sb.append("ldc \"" + identifier.getName() + "\"\n");
                 sb.append("invokespecial Fptr/<init>(Ljava/lang/Object;Ljava/lang/String;)V\n");
                 return sb.toString();
             }
         }
         var slotNo = slotOf(identifier.getName());
+        sb.append("\n");
         sb.append((slotNo > 3 ? "aload " : "aload_") + slotNo);
         return sb.toString();
     }
@@ -669,20 +687,28 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(FunctionCall functionCall) {
-        var funcType = (FptrType)functionCall.getInstance().accept(expressionTypeChecker);
+        var funcType = (FptrType) functionCall.getInstance().accept(expressionTypeChecker);
         var sb = new StringBuilder(functionCall.getInstance().accept(this));
         sb.append("\nnew java/util/ArrayList");
         sb.append("\ndup");
         sb.append("\ninvokespecial java/util/ArrayList/<init>()V");
         for (Expression arg : functionCall.getArgs()) {
             sb.append("\ndup");
-            sb.append("\n"+arg.accept(this));
+            var type = arg.accept(expressionTypeChecker);
+            if (type instanceof ListType) {
+                sb.append("\nnew List");
+                sb.append("\ndup");
+            }
+            sb.append("\n" + arg.accept(this));
+            if (type instanceof ListType) {
+                sb.append("\ninvokespecial List/<init>(LList;)V");
+            }
             sb.append("\ninvokevirtual java/util/ArrayList/add(Ljava/lang/Object;)Z");
             sb.append("\npop");
         }
         sb.append("\ninvokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;");
         if(!(funcType.getReturnType() instanceof VoidType))
-            sb.append("\n"+cast(funcType.getReturnType()));
+            sb.append("\n" + cast(funcType.getReturnType()));
         return sb.toString();
     }
 
@@ -710,12 +736,12 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) {
-        return "ldc " + intValue.getConstant() + "\n" + primitiveToNone(new IntType());
+        return "\nldc " + intValue.getConstant() + "\n" + primitiveToNone(new IntType());
     }
 
     @Override
     public String visit(BoolValue boolValue) {
-        return (boolValue.getConstant() ? "ldc 1" : "ldc 0") + "\n" + primitiveToNone(new BoolType());
+        return "\n"+(boolValue.getConstant() ? "ldc 1" : "ldc 0") + "\n" + primitiveToNone(new BoolType());
     }
 
     @Override
