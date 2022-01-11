@@ -258,7 +258,8 @@ public class CodeGenerator extends Visitor<String> {
         addCommand(prototype.toString());
         setHeaders();
         functionDeclaration.getBody().accept(this);
-        addCommand(".end method");
+        setFooter();
+
         SymbolTable.pop();
         return null;
     }
@@ -680,13 +681,13 @@ public class CodeGenerator extends Visitor<String> {
             sb.append("\npop");
         }
         sb.append("\ninvokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;");
-        sb.append("\n"+cast(funcType.getReturnType()));
+        if(!(funcType.getReturnType() instanceof VoidType))
+            sb.append("\n"+cast(funcType.getReturnType()));
         return sb.toString();
     }
 
     @Override
     public String visit(ListSize listSize) {
-        //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
@@ -697,8 +698,7 @@ public class CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(ListAppend listAppend) {// return void
-        // todo - check -- same as pdf
+    public String visit(ListAppend listAppend) {
         var sb = new StringBuilder();
         sb.append(listAppend.getListArg().accept(this));
         sb.append("\n");
@@ -709,12 +709,12 @@ public class CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(IntValue intValue) { // return none primitive
+    public String visit(IntValue intValue) {
         return "ldc " + intValue.getConstant() + "\n" + primitiveToNone(new IntType());
     }
 
     @Override
-    public String visit(BoolValue boolValue) { // return none primitive
+    public String visit(BoolValue boolValue) {
         return (boolValue.getConstant() ? "ldc 1" : "ldc 0") + "\n" + primitiveToNone(new BoolType());
     }
 
