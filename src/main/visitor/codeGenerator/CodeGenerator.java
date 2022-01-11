@@ -150,6 +150,25 @@ public class  CodeGenerator extends Visitor<String> {
         return "\n";
     }
 
+    private String getType(Type variableType){
+        if (variableType instanceof IntType) {
+            return "java/lang/Integer";
+        }
+        if (variableType instanceof BoolType) {
+            return "java/lang/Boolean";
+        }
+        if (variableType instanceof ListType) {
+            return  "List";
+        }
+        if (variableType instanceof FptrType) {
+            return "Fptr";
+        }
+        if (variableType instanceof StructType) {
+            return nameStruct;
+        }
+        return "";
+    }
+
     @Override
     public String visit(Program program) {
         prepareOutputFolder();
@@ -492,12 +511,22 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(StructAccess structAccess) {
-        //todo
-        return null;
+        //todo - check -- same as pdf
+        Type obj = structAccess.accept(expressionTypeChecker);
+        StructType struct = (StructType) obj;
+        String nameStruct = struct.getStructName().getName();
+        String nameField = structAccess.getElement().getName();
+        Type typeField = structAccess.getElement().accept(expressionTypeChecker);
+        var sb = new StringBuilder();
+        sb.append(structAccess.accept(this));
+        sb.append("\n");
+        sb.append("getfield "+nameStruct+"/"+nameField+" L"+getType(typeField)+";");
+        sb.append("\n");
+        return sb.toString();
     }
 
     @Override
-    public String visit(Identifier identifier) {
+    public String visit(Identifier identifier) { // Plz complete
         Type id = expressionTypeChecker.visit(identifier);
         if (id instanceof FptrType) {
             //todo  - not complete - ?? -> تو حالتی که متغیر اسم تابع باشه باید اول کلاسش لود بشه که همون مین هست و بعد اسم تابع قرار بگیره - Nazanin
@@ -521,29 +550,13 @@ public class  CodeGenerator extends Visitor<String> {
         sb.append("\n");
         // cast to type
         Type obj = listAccessByIndex.accept(expressionTypeChecker);
-        if(obj instanceof IntType){
-            sb.append("checkcast java/lang/Integer");
-        }
-        if(obj instanceof  BoolType){
-            sb.append("checkcast java/lang/Boolean");
-        }
-        if(obj instanceof  FptrType){
-            sb.append("checkcast Fptr");
-        }
-        if(obj instanceof StructType){
-            StructType struct = (StructType) obj;
-            String nameStruct = struct.getStructName().getName();
-            sb.append("checkcast "+nameStruct);
-        }
-        if(obj instanceof ListType){
-            sb.append("checkcast List");
-        }
+        sb.append("checkcast "+ getType(obj));
         sb.append("\n");
         return sb.toString();
     }
 
     @Override
-    public String visit(FunctionCall functionCall) { // return None primitive
+    public String visit(FunctionCall functionCall) { // return None primitive  // Plz complete
         //todo - not complete -> برید اینستنس رو ویزیت کنید و کامند هاشو اضافه کنید و پوینتری که باید سر استک باشه توی ویزیت های دیگه هندل شده با اینووک ویرچوال تابع اینووک رو از کلاس پوینتر صدا بزنید - Nazanin
         // invode Fptr ye arraylist migire!
         var functionType = (FptrType)functionCall.accept(expressionTypeChecker);
@@ -565,7 +578,7 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(ListSize listSize) { // return none primitive // check
+    public String visit(ListSize listSize) { // return none primitive
         //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
@@ -588,12 +601,12 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(IntValue intValue) { // return none primitive // check
+    public String visit(IntValue intValue) { // return none primitive
         return "ldc " + intValue.getConstant() +"\n"+noneToPrimitive(new IntType());
     }
 
     @Override
-    public String visit(BoolValue boolValue) { // return none primitive // check
+    public String visit(BoolValue boolValue) { // return none primitive
         return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+"\n"+noneToPrimitive(new BoolType());
     }
 
