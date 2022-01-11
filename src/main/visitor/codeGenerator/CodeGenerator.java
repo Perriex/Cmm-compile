@@ -219,7 +219,6 @@ public class CodeGenerator extends Visitor<String> {
         }
         createFile(structDeclaration.getStructName().getName());
         currentStructName = structDeclaration.getStructName().getName();
-        //todo - not complete
         addCommand(".class public " + structDeclaration.getStructName().getName());
         addCommand(".super java/lang/Object");
 
@@ -248,7 +247,6 @@ public class CodeGenerator extends Visitor<String> {
             SymbolTable.push(functionSymbolTableItem.getFunctionSymbolTable());
         } catch (ItemNotFoundException e) {//unreachable
         }
-        //todo - check
         StringBuilder prototype = new StringBuilder(".method public " + functionDeclaration.getFunctionName().getName() + "(");
         for (VariableDeclaration arg : functionDeclaration.getArgs()) {
             slotOf(arg.getVarName().getName());
@@ -305,7 +303,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(VariableDeclaration variableDeclaration) {
-        //todo
         Type variableType = variableDeclaration.getVarType();
         if (isInStruct) {
             if (variableType instanceof IntType) {
@@ -382,7 +379,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(AssignmentStmt assignmentStmt) {
-        //todo
         BinaryExpression node = new BinaryExpression(assignmentStmt.getLValue(), assignmentStmt.getRValue(), BinaryOperator.assign);
         isInAssignmentStmt = true;
         addCommand(node.accept(this));
@@ -419,7 +415,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(FunctionCallStmt functionCallStmt) {
-        //todo - check -- same as pdf
         expressionTypeChecker.setInFunctionCallStmt(true);
         addCommand(functionCallStmt.getFunctionCall().accept(this));
         addCommand("pop");
@@ -444,7 +439,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ReturnStmt returnStmt) {
-        //todo - check -- same as pdf
         if (returnStmt.getReturnedExpr() != null) {
             addCommand(returnStmt.getReturnedExpr().accept(this));
             addCommand("areturn");
@@ -494,7 +488,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppendStmt listAppendStmt) {
-        //todo - icheck -- same as pdf
         expressionTypeChecker.setInFunctionCallStmt(true);
         addCommand(listAppendStmt.getListAppendExpr().accept(this));
         expressionTypeChecker.setInFunctionCallStmt(false);
@@ -503,7 +496,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListSizeStmt listSizeStmt) {
-        // todo - icheck -- same as pdf
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
         addCommand("pop");
         return null;
@@ -633,7 +625,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(StructAccess structAccess) {
-        //todo - check -- same as pdf
         Type obj = structAccess.getInstance().accept(expressionTypeChecker);
         StructType struct = (StructType) obj;
         String nameStruct = struct.getStructName().getName();
@@ -669,7 +660,6 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAccessByIndex listAccessByIndex) { // return None primitive
-        //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listAccessByIndex.getInstance().accept(this));
         sb.append("\n");
