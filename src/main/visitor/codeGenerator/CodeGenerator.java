@@ -164,6 +164,8 @@ public class  CodeGenerator extends Visitor<String> {
             return "Fptr";
         }
         if (variableType instanceof StructType) {
+            StructType struct = (StructType) variableType;
+            String nameStruct = struct.getStructName().getName();
             return nameStruct;
         }
         return "";
@@ -424,82 +426,10 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(BinaryExpression binaryExpression) {
         //todo
-        Type expr = expressionTypeChecker.visit(binaryExpression);
-        if (expr instanceof IntType) {
-            var sb = new StringBuilder();
-            String intConv = "\ndup";
-            sb.append( binaryExpression.getFirstOperand().accept(this) + '\n' +
-                    "invokevirtual java/lang/Integer/intValue()I\n" +
-                    binaryExpression.getSecondOperand().accept(this) + '\n' +
-                    "invokevirtual java/lang/Integer/intValue()I\n");
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.add) {
-                sb.append("iadd");
-                sb.append(intConv);
-                return sb.toString();
-            }
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.sub) {
-                sb.append("isub");
-                sb.append(intConv);
-                return  sb.toString();
-            }
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.mult) {
-                sb.append("imul");
-                sb.append(intConv);
-                return  sb.toString();
-            }
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.div) {
-                sb.append("idiv");
-                sb.append(intConv);
-                return sb.toString();
-            }
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.assign) {
-                //do
-            }
-            // == => if_icmpeq
-            // =
-        }
-        if (expr instanceof BoolType) {
-            // == => if_icmpeq
-            // & | ~ =
-            String boolConv = "\ndup\ninvokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.and ||
-                    binaryExpression.getBinaryOperator() == BinaryOperator.or) {
-                addCommand(binaryExpression.getFirstOperand().accept(this) + '\n' +
-                        "invokevirtual java/lang/Boolean/booleanValue()Z" + '\n' +
-                        binaryExpression.getSecondOperand().accept(this) + '\n' +
-                        "invokevirtual java/lang/Boolean/booleanValue()Z");
+        var sb = new StringBuilder();
+        Type expr = binaryExpression.accept(expressionTypeChecker);
+        if(expr instanceof IntType){
 
-                return (binaryExpression.getBinaryOperator() == BinaryOperator.and ? "iand" : "ior") + boolConv;
-            }
-            if (binaryExpression.getBinaryOperator() == BinaryOperator.gt ||
-                    binaryExpression.getBinaryOperator() == BinaryOperator.lt) {
-                addCommand(binaryExpression.getFirstOperand().accept(this) + '\n' +
-                        "invokevirtual java/lang/Integer/intValue()I" + '\n' +
-                        binaryExpression.getSecondOperand().accept(this) + '\n' +
-                        "invokevirtual java/lang/Integer/intValue()I");
-                label += 5;
-                if (binaryExpression.getBinaryOperator() == BinaryOperator.gt) {
-                    addCommand("if_icmple Label" + label);
-                } else {
-                    addCommand("if_icmpge Label" + label);
-                }
-                label += 3;
-                addCommand("ldc 1\ngoto Label" + label);
-                addCommand("Label" + (label - 3) + ":");
-                addCommand("ldc 0\nLabel" + label + ":");
-                return boolConv;
-            }
-        }
-        if (expr instanceof ListType) {
-            // =
-        }
-        if (expr instanceof FptrType) {
-            // == => if_acmpeq
-            // =
-        }
-        if (expr instanceof StructType) {
-            // == => if_acmpeq
-            // =
         }
         return null;
     }
@@ -584,7 +514,7 @@ public class  CodeGenerator extends Visitor<String> {
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
         sb.append("invokevirtual List/getSize()I\n");
-        sb.append(noneToPrimitive(new IntType()+'\n');
+        sb.append(noneToPrimitive(new IntType())+"\n");
         return sb.toString();
     }
 
