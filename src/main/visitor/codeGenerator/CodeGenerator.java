@@ -401,7 +401,10 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(LoopStmt loopStmt) {
-        //todo
+        addCommand(loopStmt.getCondition().accept(this));
+        addCommand(noneToPrimitive(new BoolType()));
+        addCommand("ifeq ");
+
         return null;
     }
 
@@ -505,15 +508,11 @@ public class CodeGenerator extends Visitor<String> {
                 sb.append("aload_0\n");
                 sb.append("ldc \""+identifier.getName()+"\"\n");
                 sb.append("invokespecial Fptr/<init>(Ljava/lang/Object;Ljava/lang/String;)V\n");
-                var createSlotNo = slotOf(identifier.getName());
-                sb.append((createSlotNo > 3 ? "astore " : "astore_") + createSlotNo+"\n");
+                return sb.toString();
             }
         }
         var slotNo = slotOf(identifier.getName());
         sb.append((slotNo > 3 ? "aload " : "aload_") + slotNo);
-        sb.append( idType instanceof FptrType ? "invokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;\n"
-                + cast(((FptrType)idType).getReturnType()) + "\n"
-                : "");
         return sb.toString();
     }
 
@@ -538,17 +537,20 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(FunctionCall functionCall) {
-        var func = functionCall.getInstance().accept(this);
-        addCommand("new java/util/ArrayList");
-        addCommand("dup");
-        addCommand("invokespecial java/util/ArrayList/<init>()V");
+        var funcType = (FptrType)functionCall.getInstance().accept(expressionTypeChecker);
+        var sb = new StringBuilder(functionCall.getInstance().accept(this));
+        sb.append("\nnew java/util/ArrayList");
+        sb.append("\ndup");
+        sb.append("\ninvokespecial java/util/ArrayList/<init>()V");
         for (Expression arg : functionCall.getArgs()) {
-            addCommand("dup");
-            addCommand(arg.accept(this));
-            addCommand("invokevirtual java/util/ArrayList/add(Ljava/lang/Object;)Z");
-            addCommand("pop");
+            sb.append("\ndup");
+            sb.append("\n"+arg.accept(this));
+            sb.append("\ninvokevirtual java/util/ArrayList/add(Ljava/lang/Object;)Z");
+            sb.append("\npop");
         }
-        return func;
+        sb.append("\ninvokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;");
+        sb.append("\n"+cast(funcType.getReturnType()));
+        return sb.toString();
     }
 
     @Override
