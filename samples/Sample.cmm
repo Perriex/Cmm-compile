@@ -1,5 +1,3 @@
 main()begin
-    int s = 2
-    int q = 4
-    bool k = s > 4
+    int c = 3 + 8, d,g
 end

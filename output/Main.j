@@ -12,19 +12,19 @@
 .limit locals 128
 		aload_0
 		invokespecial java/lang/Object/<init>()V
-		ldc 1
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		ldc 3
+		invokevirtual java/lang/Integer/intValue()I
+		ldc 8
+		invokevirtual java/lang/Integer/intValue()I
+		iadd
+		dup
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_1
 		iconst_0
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_2
-		aload_1
-		invokevirtual java/lang/Boolean/booleanValue()Z
-		aload_2
-		invokevirtual java/lang/Boolean/booleanValue()Z
-		ior
-		dup
-		invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;
+		iconst_0
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_3
 		return
 .end method
