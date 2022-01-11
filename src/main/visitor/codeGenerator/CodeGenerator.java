@@ -19,7 +19,7 @@ import main.visitor.type.ExpressionTypeChecker;
 import java.io.*;
 import java.util.*;
 
-public class  CodeGenerator extends Visitor<String> {
+public class CodeGenerator extends Visitor<String> {
     ExpressionTypeChecker expressionTypeChecker = new ExpressionTypeChecker();
     private String outputPath;
     private FileWriter currentFile;
@@ -90,19 +90,22 @@ public class  CodeGenerator extends Visitor<String> {
         }
     }
 
-    private void addStaticMainMethod() {
+    private void addStaticMainMethod(Statement main) {
         addCommand(".method public static main([Ljava/lang/String;)V");
         addCommand(".limit stack 128");
         addCommand(".limit locals 128");
         addCommand("new Main");
+        addCommand("dup");
         addCommand("invokespecial Main/<init>()V");
+        addCommand("astore_0");
+        main.accept(this);
         addCommand("return");
         addCommand(".end method");
     }
 
     private int slotOf(String identifier) {
-        if(arr.contains(identifier)){
-            return arr.indexOf(identifier)+1;
+        if (arr.contains(identifier)) {
+            return arr.indexOf(identifier) + 1;
         }
         arr.add(identifier);
         return arr.size();
@@ -110,9 +113,9 @@ public class  CodeGenerator extends Visitor<String> {
 
     private String getJasminType(Type type) {
         if (type instanceof BoolType)
-            return "Z";
+            return "Ljava/lang/Boolean;";
         if (type instanceof IntType)
-            return "I";
+            return "Ljava/lang/Integer;";
         if (type instanceof ListType)
             return "LList;";
         if (type instanceof FptrType)
@@ -132,10 +135,10 @@ public class  CodeGenerator extends Visitor<String> {
         addCommand(".end method");
     }
 
-    private String primitiveToNone(Type var){
-        if(var instanceof IntType){
+    private String primitiveToNone(Type var) {
+        if (var instanceof IntType) {
             return "invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;";
-        }else if(var instanceof BoolType){
+        } else if (var instanceof BoolType) {
             return "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;";
         }
         return "\n";
@@ -169,6 +172,12 @@ public class  CodeGenerator extends Visitor<String> {
             return nameStruct;
         }
         return "";
+    }
+
+    private String cast(Type type)
+    {
+        var typeName = getJasminType(type);
+        return "checkcast " + typeName.substring(1, typeName.length() - 1);
     }
 
     @Override
@@ -232,7 +241,7 @@ public class  CodeGenerator extends Visitor<String> {
         } catch (ItemNotFoundException e) {//unreachable
         }
         //todo - check
-        StringBuilder prototype = new StringBuilder(".method public static " + functionDeclaration.getFunctionName().getName() + "(");
+        StringBuilder prototype = new StringBuilder(".method public " + functionDeclaration.getFunctionName().getName() + "(");
         for (VariableDeclaration arg : functionDeclaration.getArgs()) {
             prototype.append(getJasminType(arg.getVarType())); // arguments are none primitive!
         }
@@ -240,8 +249,7 @@ public class  CodeGenerator extends Visitor<String> {
         addCommand(prototype.toString());
         setHeaders();
         functionDeclaration.getBody().accept(this);
-        // addCommand(functionDeclaration.getReturnType() instanceof VoidType ? "return" : "areturn"); -> if it has a return expr it will add return and areturn
-        addCommand("return\n.end method");
+        addCommand(".end method");
         SymbolTable.pop();
         return null;
     }
@@ -257,14 +265,12 @@ public class  CodeGenerator extends Visitor<String> {
 
         addCommand(".class public Main");
         addCommand(".super java/lang/Object");
-        addStaticMainMethod();
         addCommand(".method public <init>()V");
         setHeaders();
         addCommand("aload_0");
         addCommand("invokespecial java/lang/Object/<init>()V");
-        mainDeclaration.getBody().accept(this);
         setFooter();
-
+        addStaticMainMethod(mainDeclaration.getBody());
         SymbolTable.pop();
         return null;
     }
@@ -371,8 +377,8 @@ public class  CodeGenerator extends Visitor<String> {
         addCommand("getstatic java/lang/System/out Ljava/io/PrintStream;");
         Type argType = displayStmt.getArg().accept(expressionTypeChecker);
         String commandsOfArg = displayStmt.getArg().accept(this);
-
         addCommand(commandsOfArg);
+        addCommand(noneToPrimitive(argType));
         if (argType instanceof IntType)
             addCommand("invokevirtual java/io/PrintStream/println(I)V");
         if (argType instanceof BoolType)
@@ -384,11 +390,10 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(ReturnStmt returnStmt) {
         //todo - check -- same as pdf
-        if(returnStmt.getReturnedExpr() != null){
+        if (returnStmt.getReturnedExpr() != null) {
             addCommand(returnStmt.getReturnedExpr().accept(this));
-            addCommand(primitiveToNone(returnStmt.getReturnedExpr().accept(expressionTypeChecker)));
             addCommand("areturn");
-        }else{
+        } else {
             addCommand("return");
         }
         return null;
@@ -490,14 +495,24 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(Identifier identifier) { // Plz complete
-        Type id = expressionTypeChecker.visit(identifier);
-        if (id instanceof FptrType) {
-            //todo  - not complete - ?? -> تو حالتی که متغیر اسم تابع باشه باید اول کلاسش لود بشه که همون مین هست و بعد اسم تابع قرار بگیره - Nazanin
-            return ""; //return identifier.getName();
+    public String visit(Identifier identifier) {
+        Type idType = expressionTypeChecker.visit(identifier);
+        if (idType instanceof FptrType) {
+            if (!arr.contains(identifier.getName())) {
+                addCommand("new Fptr");
+                addCommand("dup");
+                addCommand("aload_0");
+                addCommand("ldc \""+identifier.getName()+"\"");
+                addCommand("invokespecial Fptr/<init>(Ljava/lang/Object;Ljava/lang/String;)V");
+                var createSlotNo = slotOf(identifier.getName());
+                addCommand((createSlotNo > 3 ? "astore " : "astore_") + createSlotNo);
+            }
         }
-        var slotno = slotOf(identifier.getName());
-        return (slotno > 3 ? "aload " : "aload_") + slotno;
+        var slotNo = slotOf(identifier.getName());
+        addCommand((slotNo > 3 ? "aload " : "aload_") + slotNo);
+        return idType instanceof FptrType ? "invokevirtual Fptr/invoke(Ljava/util/ArrayList;)Ljava/lang/Object;\n"
+                + cast(((FptrType)idType).getReturnType()) + "\n"
+                : "";
     }
 
     @Override
@@ -520,35 +535,29 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(FunctionCall functionCall) { // return None primitive  // Plz complete
-        //todo - not complete -> برید اینستنس رو ویزیت کنید و کامند هاشو اضافه کنید و پوینتری که باید سر استک باشه توی ویزیت های دیگه هندل شده با اینووک ویرچوال تابع اینووک رو از کلاس پوینتر صدا بزنید - Nazanin
-        // invode Fptr ye arraylist migire!
-        var functionType = (FptrType)functionCall.accept(expressionTypeChecker);
-        var sb = new StringBuilder();
+    public String visit(FunctionCall functionCall) {
+        var func = functionCall.getInstance().accept(this);
+        addCommand("new java/util/ArrayList");
+        addCommand("dup");
+        addCommand("invokespecial java/util/ArrayList/<init>()V");
         for (Expression arg : functionCall.getArgs()) {
-            sb.append(arg.accept(this));
-            sb.append("\n");
-            //sb.append(primitiveToNone(arg.accept(expressionTypeChecker))+'\n');
+            addCommand("dup");
+            addCommand(arg.accept(this));
+            addCommand("invokevirtual java/util/ArrayList/add(Ljava/lang/Object;)Z");
+            addCommand("pop");
         }
-        //How to get FunctionName?
-        sb.append("invokestatic Main/??(");
-        for (Type arg : functionType.getArgsType()) {
-            sb.append(getJasminType(arg));
-        }
-        sb.append(")").append(getJasminType(functionType.getReturnType()));
-        //sb.append(primitiveToNone(functionType.getReturnType())+'\n'); //add
-        // arguments convert to None primitive and return of funtion also convert to none primitive
-        return null;
+        return func;
     }
 
     @Override
-    public String visit(ListSize listSize) { // return none primitive
+    public String visit(ListSize listSize) {
         //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
         sb.append("invokevirtual List/getSize()I\n");
-        sb.append(noneToPrimitive(new IntType())+"\n");
+        sb.append(primitiveToNone(new IntType()));
+        sb.append("\n");
         return sb.toString();
     }
 
@@ -566,12 +575,12 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) { // return none primitive
-        return "ldc " + intValue.getConstant() +"\n"+primitiveToNone(new IntType());
+        return "ldc " + intValue.getConstant() + "\n" + primitiveToNone(new IntType());
     }
 
     @Override
     public String visit(BoolValue boolValue) { // return none primitive
-        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+"\n"+primitiveToNone(new BoolType());
+        return (boolValue.getConstant() ? "ldc 1" : "ldc 0") + "\n" + primitiveToNone(new BoolType());
     }
 
     @Override
