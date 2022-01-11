@@ -1,3 +1,10 @@
+struct A begin
+    int b
+    bool c
+    fptr < int -> void > d
+    list #int e
+end
+
 main()begin
-    int c = 3 + 8, d,g
+    struct A a
 end

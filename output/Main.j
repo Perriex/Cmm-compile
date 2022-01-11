@@ -12,19 +12,9 @@
 .limit locals 128
 		aload_0
 		invokespecial java/lang/Object/<init>()V
-		ldc 3
-		invokevirtual java/lang/Integer/intValue()I
-		ldc 8
-		invokevirtual java/lang/Integer/intValue()I
-		iadd
+		new A
 		dup
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		invokespecial A/<init>()V
 		astore_1
-		iconst_0
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
-		astore_2
-		iconst_0
-		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
-		astore_3
 		return
 .end method

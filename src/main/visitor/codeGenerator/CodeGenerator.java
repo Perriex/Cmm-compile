@@ -176,7 +176,18 @@ public class  CodeGenerator extends Visitor<String> {
         }
         createFile(structDeclaration.getStructName().getName());
 
-        //todo
+        //todo - not complete
+        addCommand(".class public "+structDeclaration.getStructName().getName());
+        addCommand(".super java/lang/Object");
+
+        structDeclaration.getBody().accept(this);
+        addCommand(".method public <init>()V");
+        setHeaders();
+        addCommand("aload_0");
+        addCommand("invokespecial java/lang/Object/<init>()V");
+        // add default values in constructor
+        setFooter();
+
 
         SymbolTable.pop();
         return null;
@@ -233,7 +244,23 @@ public class  CodeGenerator extends Visitor<String> {
         //todo
         Type variableType = variableDeclaration.getVarType();
         if (isInStruct) {
-
+            if (variableType instanceof IntType) {
+                addCommand(".field public " + variableDeclaration.getVarName().getName() + " Ljava/lang/Integer;");
+            }
+            if (variableType instanceof BoolType) {
+                addCommand(".field public " + variableDeclaration.getVarName().getName() + " Ljava/lang/Boolean;");
+            }
+            if (variableType instanceof ListType) {
+                addCommand(".field public " + variableDeclaration.getVarName().getName() + " LList;");
+            }
+            if (variableType instanceof FptrType) {
+                addCommand(".field public " + variableDeclaration.getVarName().getName() + " LFptr;");
+            }
+            if (variableType instanceof StructType) {
+                StructType struct = (StructType) variableType;
+                String nameStruct = struct.getStructName().getName();
+                addCommand(".field public " + variableDeclaration.getVarName().getName() + " L" + nameStruct + ";");
+            }
         } else {
             if (variableDeclaration.getDefaultValue() != null) {
                 addCommand(variableDeclaration.getDefaultValue().accept(this));
@@ -251,16 +278,21 @@ public class  CodeGenerator extends Visitor<String> {
                     addCommand("invokespecial java/util/ArrayList/<init>()V");
                     addCommand("invokespecial List/<init>(Ljava/util/ArrayList;)V");
                 }
-                if(variableType instanceof FptrType){
-                    // ...
+                if (variableType instanceof FptrType) {
+                    addCommand("aconst_null");
                 }
-                if(variableType instanceof StructType){
-                    // ...
+                if (variableType instanceof StructType) {
+                    StructType struct = (StructType) variableType;
+                    String nameStruct = struct.getStructName().getName();
+                    addCommand("new " + nameStruct);
+                    addCommand("dup");
+                    addCommand("invokespecial " + nameStruct + "/<init>()V");
                 }
             }
+            var slotNo = slotOf(variableDeclaration.getVarName().getName());
+            addCommand((slotNo > 3 ? "astore " : "astore_") + slotNo);
         }
-        var slotNo = slotOf(variableDeclaration.getVarName().getName());
-        addCommand((slotNo > 3 ? "astore " : "astore_") + slotNo);
+
         return null;
     }
 
@@ -346,7 +378,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListAppendStmt listAppendStmt) {
-        //todo - check -- same as pdf
+        //todo - icheck -- same as pdf
         expressionTypeChecker.setInFunctionCallStmt(true);
         addCommand(listAppendStmt.getListAppendExpr().accept(this));
         expressionTypeChecker.setInFunctionCallStmt(false);
@@ -355,7 +387,7 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ListSizeStmt listSizeStmt) {
-        // todo - check -- same as pdf
+        // todo - icheck -- same as pdf
         addCommand(listSizeStmt.getListSizeExpr().accept(this));
         addCommand("pop");
         return null;
