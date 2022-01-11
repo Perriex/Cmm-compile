@@ -140,13 +140,16 @@ public class  CodeGenerator extends Visitor<String> {
         }
         return "\n";
     }
-  private String noneToPrimitive(Type var){
-if(var instanceof IntType)
-return "invokevirtual java/lang/Integer/intValue()I\n";
-if(var instanceof BoolType)
-return "invokevirtual java/lang/Boolean/booleanValue()Z";
-return "\n";
-}
+
+    private String noneToPrimitive(Type var){
+        if(var instanceof IntType){
+            return "invokevirtual java/lang/Integer/intValue()I";
+        }else if(var instanceof BoolType){
+            return "invokevirtual java/lang/Boolean/booleanValue()Z\n";
+        }
+        return "\n";
+    }
+
     @Override
     public String visit(Program program) {
         prepareOutputFolder();
@@ -506,13 +509,36 @@ return "\n";
 
     @Override
     public String visit(ListAccessByIndex listAccessByIndex) { // return None primitive
-        //todo - not complete
+        //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listAccessByIndex.getIndex().accept(this));
+        sb.append("\n");
         sb.append("invokevirtual java/lang/Integer/intValue()I");
+        sb.append("\n");
         sb.append(listAccessByIndex.getInstance().accept(this));
+        sb.append("\n");
         sb.append("invokevirtual List/getElement(I)Ljava/lang/Object");
+        sb.append("\n");
         // cast to type
+        Type obj = listAccessByIndex.accept(expressionTypeChecker);
+        if(obj instanceof IntType){
+            sb.append("checkcast java/lang/Integer");
+        }
+        if(obj instanceof  BoolType){
+            sb.append("checkcast java/lang/Boolean");
+        }
+        if(obj instanceof  FptrType){
+            sb.append("checkcast Fptr");
+        }
+        if(obj instanceof StructType){
+            StructType struct = (StructType) obj;
+            String nameStruct = struct.getStructName().getName();
+            sb.append("checkcast "+nameStruct);
+        }
+        if(obj instanceof ListType){
+            sb.append("checkcast List");
+        }
+        sb.append("\n");
         return sb.toString();
     }
 
@@ -539,14 +565,13 @@ return "\n";
     }
 
     @Override
-    public String visit(ListSize listSize) { // return none primitive
+    public String visit(ListSize listSize) { // return none primitive // check
         //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
         sb.append("invokevirtual List/getSize()I\n");
-sb.append(primitiveToNone(new IntType());
-sb.append("\n");
+        sb.append(noneToPrimitive(new IntType()+'\n');
         return sb.toString();
     }
 
@@ -563,13 +588,13 @@ sb.append("\n");
     }
 
     @Override
-    public String visit(IntValue intValue) { // return none primitive
-        return "ldc " + intValue.getConstant()+'\n' + primitiveToNone(new IntType()) ;
+    public String visit(IntValue intValue) { // return none primitive // check
+        return "ldc " + intValue.getConstant() +"\n"+noneToPrimitive(new IntType());
     }
 
     @Override
-    public String visit(BoolValue boolValue) { // return none primitive
-        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+ '\n' + primitiveToNone(new BoolType());
+    public String visit(BoolValue boolValue) { // return none primitive // check
+        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+"\n"+noneToPrimitive(new BoolType());
     }
 
     @Override
