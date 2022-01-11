@@ -125,7 +125,7 @@ public class CodeGenerator extends Visitor<String> {
         if (type instanceof ListType)
             return "LList;";
         if (type instanceof FptrType)
-            return "LFtpr;";
+            return "LFptr;";
         if (type instanceof StructType)
             return "L" + ((StructType) type).getStructName().getName() + ";";
         return "V";
