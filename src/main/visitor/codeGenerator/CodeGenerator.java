@@ -140,7 +140,13 @@ public class  CodeGenerator extends Visitor<String> {
         }
         return "\n";
     }
-
+  private String noneToPrimitive(Type var){
+if(var instanceof IntType)
+return "invokevirtual java/lang/Integer/intValue()I\n";
+if(var instanceof BoolType)
+return "invokevirtual java/lang/Boolean/booleanValue()Z";
+return "\n";
+}
     @Override
     public String visit(Program program) {
         prepareOutputFolder();
@@ -533,12 +539,14 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(ListSize listSize) { // return primitive
+    public String visit(ListSize listSize) { // return none primitive
         //todo - check -- same as pdf
         var sb = new StringBuilder();
         sb.append(listSize.getArg().accept(this));
         sb.append("\n");
         sb.append("invokevirtual List/getSize()I\n");
+sb.append(primitiveToNone(new IntType());
+sb.append("\n");
         return sb.toString();
     }
 
@@ -555,13 +563,13 @@ public class  CodeGenerator extends Visitor<String> {
     }
 
     @Override
-    public String visit(IntValue intValue) { // return primitive
-        return "ldc " + intValue.getConstant() ;
+    public String visit(IntValue intValue) { // return none primitive
+        return "ldc " + intValue.getConstant()+'\n' + primitiveToNone(new IntType()) ;
     }
 
     @Override
-    public String visit(BoolValue boolValue) { // return primitive
-        return (boolValue.getConstant() ? "ldc 1" : "ldc 0");
+    public String visit(BoolValue boolValue) { // return none primitive
+        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+ '\n' + primitiveToNone(new BoolType());
     }
 
     @Override
