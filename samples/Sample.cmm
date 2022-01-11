@@ -1,10 +1,12 @@
-struct A begin
+struct t
     int b
-    bool c
-    fptr < int -> void > d
-    list #int e
-end
 
 main()begin
-    struct A a
+    int a
+    int b
+    b = a = 4 - 1
+
+    a = 3
+    b = 7
+
 end

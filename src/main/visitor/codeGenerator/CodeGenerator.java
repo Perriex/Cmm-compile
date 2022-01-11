@@ -294,7 +294,6 @@ public class  CodeGenerator extends Visitor<String> {
         } else {
             if (variableDeclaration.getDefaultValue() != null) {
                 addCommand(variableDeclaration.getDefaultValue().accept(this));
-                addCommand(primitiveToNone(variableType));
             } else {
                 if (variableType instanceof IntType || variableType instanceof BoolType) {
                     addCommand("iconst_0");
@@ -331,11 +330,14 @@ public class  CodeGenerator extends Visitor<String> {
         return null;
     }
 
+    private boolean isInAssignmentStmt = false;
     @Override
     public String visit(AssignmentStmt assignmentStmt) {
-        //todo - check -- same as pdf
+        //todo
         BinaryExpression node = new BinaryExpression(assignmentStmt.getLValue(),assignmentStmt.getRValue(),BinaryOperator.assign);
+        isInAssignmentStmt = true;
         addCommand(node.accept(this));
+        isInAssignmentStmt = false;
         addCommand("pop");
         return null;
     }
@@ -428,10 +430,42 @@ public class  CodeGenerator extends Visitor<String> {
         //todo
         var sb = new StringBuilder();
         Type expr = binaryExpression.accept(expressionTypeChecker);
+        BinaryOperator opr = binaryExpression.getBinaryOperator();
+        Type rvalue = binaryExpression.getSecondOperand().accept(expressionTypeChecker); // for list assign
         if(expr instanceof IntType){
-
+            sb.append(binaryExpression.getSecondOperand().accept(this));
+            if(opr != BinaryOperator.assign){
+                sb.append("\ninvokevirtual java/lang/Integer/intValue()I\n");
+                sb.append(binaryExpression.getFirstOperand().accept(this));
+                sb.append("\ninvokevirtual java/lang/Integer/intValue()I\n");
+            }
+            if(opr == BinaryOperator.add){
+                sb.append("iadd");
+                sb.append("\ndup\n"+primitiveToNone(expr));
+                return sb.toString();
+            }
+            if(opr == BinaryOperator.sub){
+                sb.append("isub");
+                sb.append("\ndup\n"+primitiveToNone(expr));
+            }
+            if(opr == BinaryOperator.mult){
+                sb.append("imul");
+                sb.append("\ndup\n"+primitiveToNone(expr));
+            }
+            if(opr == BinaryOperator.div){
+                sb.append("idiv");
+                sb.append("\ndup\n"+primitiveToNone(expr));
+            }
+            if(opr == BinaryOperator.assign){
+                sb.append("\ndup\n");
+                Identifier lvalue = (Identifier)binaryExpression.getFirstOperand();
+                if(isInAssignmentStmt) {
+                    var slotno = slotOf(lvalue.getName());
+                    sb.append((slotno > 3 ? "astore " : "astore_") + slotno);
+                }
+            }
         }
-        return null;
+        return sb.toString();
     }
 
     @Override
@@ -442,13 +476,13 @@ public class  CodeGenerator extends Visitor<String> {
     @Override
     public String visit(StructAccess structAccess) {
         //todo - check -- same as pdf
-        Type obj = structAccess.accept(expressionTypeChecker);
+        Type obj = structAccess.getInstance().accept(expressionTypeChecker);
         StructType struct = (StructType) obj;
         String nameStruct = struct.getStructName().getName();
         String nameField = structAccess.getElement().getName();
-        Type typeField = structAccess.getElement().accept(expressionTypeChecker);
+        Type typeField = structAccess.accept(expressionTypeChecker);
         var sb = new StringBuilder();
-        sb.append(structAccess.accept(this));
+        sb.append(structAccess.getInstance().accept(this));
         sb.append("\n");
         sb.append("getfield "+nameStruct+"/"+nameField+" L"+getType(typeField)+";");
         sb.append("\n");
@@ -532,12 +566,12 @@ public class  CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(IntValue intValue) { // return none primitive
-        return "ldc " + intValue.getConstant() +"\n"+noneToPrimitive(new IntType());
+        return "ldc " + intValue.getConstant() +"\n"+primitiveToNone(new IntType());
     }
 
     @Override
     public String visit(BoolValue boolValue) { // return none primitive
-        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+"\n"+noneToPrimitive(new BoolType());
+        return (boolValue.getConstant() ? "ldc 1" : "ldc 0")+"\n"+primitiveToNone(new BoolType());
     }
 
     @Override

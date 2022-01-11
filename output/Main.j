@@ -12,9 +12,35 @@
 .limit locals 128
 		aload_0
 		invokespecial java/lang/Object/<init>()V
-		new A
-		dup
-		invokespecial A/<init>()V
+		iconst_0
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
 		astore_1
+		iconst_0
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		astore_2
+		ldc 1
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		invokevirtual java/lang/Integer/intValue()I
+		ldc 4
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		invokevirtual java/lang/Integer/intValue()I
+		isub
+		dup
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		dup
+		astore_1
+		dup
+		astore_2
+		pop
+		ldc 3
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		dup
+		astore_1
+		pop
+		ldc 7
+		invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;
+		dup
+		astore_2
+		pop
 		return
 .end method
