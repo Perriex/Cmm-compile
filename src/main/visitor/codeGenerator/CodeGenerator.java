@@ -27,6 +27,10 @@ public class CodeGenerator extends Visitor<String> {
     private Boolean isInStruct = false;
     private ArrayList<String> arr = new ArrayList<>();
     private int label = 0;
+    private String getFreshLabel()
+    {
+        return "label"+label++;
+    }
 
     private void copyFile(String toBeCopied, String toBePasted) {
         try {
@@ -358,7 +362,20 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(ConditionalStmt conditionalStmt) {
-        //todo
+        var hasElse = conditionalStmt.getElseBody() != null;
+        String l1 = getFreshLabel(), l2 = getFreshLabel();
+        addCommand(conditionalStmt.getCondition().accept(this));
+        addCommand(noneToPrimitive(new BoolType()));
+        addCommand("ifeq " + l1);
+        conditionalStmt.getThenBody().accept(this);
+        if(hasElse){
+            addCommand("goto " + l2);
+        }
+        addCommand(l1 + ":");
+        if(hasElse) {
+            conditionalStmt.getElseBody().accept(this);
+            addCommand(l2 + ":");
+        }
         return null;
     }
 
@@ -401,10 +418,14 @@ public class CodeGenerator extends Visitor<String> {
 
     @Override
     public String visit(LoopStmt loopStmt) {
+        String l1 = getFreshLabel(), l2 = getFreshLabel();
+        addCommand(l1 + ":");
         addCommand(loopStmt.getCondition().accept(this));
         addCommand(noneToPrimitive(new BoolType()));
-        addCommand("ifeq ");
-
+        addCommand("ifeq " + l2);
+        loopStmt.getBody().accept(this);
+        addCommand("goto " + l1);
+        addCommand(l2 + ":");
         return null;
     }
 
