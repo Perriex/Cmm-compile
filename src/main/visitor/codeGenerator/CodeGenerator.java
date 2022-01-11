@@ -15,6 +15,8 @@ import main.symbolTable.items.FunctionSymbolTableItem;
 import main.symbolTable.items.StructSymbolTableItem;
 import main.visitor.Visitor;
 import main.visitor.type.ExpressionTypeChecker;
+import parsers.CmmParser;
+
 import java.io.*;
 import java.util.*;
 
@@ -24,6 +26,8 @@ public class CodeGenerator extends Visitor<String> {
     private FileWriter currentFile;
 
     private Boolean isInStruct = false;
+    private Boolean isInStructInit = false;
+    private String currentStructName = "";
     private ArrayList<String> arr = new ArrayList<>();
     private int label = 0;
     private String getFreshLabel()
@@ -187,13 +191,11 @@ public class CodeGenerator extends Visitor<String> {
     public String visit(Program program) {
         prepareOutputFolder();
 
-        isInStruct = true;
         for (StructDeclaration structDeclaration : program.getStructs()) {
             arr.clear();
             label = 0;
             structDeclaration.accept(this);
         }
-        isInStruct = false;
 
         createFile("Main");
         arr.clear();
@@ -217,17 +219,21 @@ public class CodeGenerator extends Visitor<String> {
         } catch (ItemNotFoundException e) {//unreachable
         }
         createFile(structDeclaration.getStructName().getName());
-
+        currentStructName = structDeclaration.getStructName().getName();
         //todo - not complete
         addCommand(".class public "+structDeclaration.getStructName().getName());
         addCommand(".super java/lang/Object");
 
+        isInStruct = true;
         structDeclaration.getBody().accept(this);
+        isInStruct = false;
         addCommand(".method public <init>()V");
         setHeaders();
         addCommand("aload_0");
         addCommand("invokespecial java/lang/Object/<init>()V");
-        // add default values in constructor
+        isInStructInit = true;
+        structDeclaration.getBody().accept(this);
+        isInStructInit = false;
         setFooter();
 
 
@@ -278,6 +284,25 @@ public class CodeGenerator extends Visitor<String> {
         return null;
     }
 
+    private void setField(VariableDeclaration variableDeclaration, String defaultValue){
+        addCommand("aload_0");
+        if(variableDeclaration.getDefaultValue() == null)
+            addCommand(defaultValue);
+        else
+            addCommand(variableDeclaration.getDefaultValue().accept(this));
+        addCommand("putfield "+ currentStructName + "/" + variableDeclaration.getVarName().getName() + " " + getJasminType(variableDeclaration.getVarType()));
+    }
+
+    private String makeList(){
+        var sb = new StringBuilder("new List");
+        sb.append("\ndup");
+        sb.append("\nnew java/util/ArrayList");
+        sb.append("\ndup");
+        sb.append("\ninvokespecial java/util/ArrayList/<init>()V");
+        sb.append("\ninvokespecial List/<init>(Ljava/util/ArrayList;)V");
+        return sb.toString();
+    }
+
     @Override
     public String visit(VariableDeclaration variableDeclaration) {
         //todo
@@ -300,7 +325,27 @@ public class CodeGenerator extends Visitor<String> {
                 String nameStruct = struct.getStructName().getName();
                 addCommand(".field public " + variableDeclaration.getVarName().getName() + " L" + nameStruct + ";");
             }
-        } else {
+        }
+        else if (isInStructInit) {
+            if (variableType instanceof IntType) {
+                setField(variableDeclaration, "ldc 0\n"+primitiveToNone(new IntType()));
+            }
+            if (variableType instanceof BoolType) {
+                setField(variableDeclaration, "ldc 0\n"+primitiveToNone(new BoolType()));
+            }
+            if (variableType instanceof ListType) {
+                setField(variableDeclaration, makeList());
+            }
+            if (variableType instanceof FptrType) {
+                setField(variableDeclaration, "aconst_null");
+            }
+            if (variableType instanceof StructType) {
+                setField(variableDeclaration, "new "+((StructType) variableType).getStructName()
+                        +"\ndup"
+                        +"\ninvokespecial "+((StructType) variableType).getStructName()+"/<init>()V");
+            }
+        }
+        else {
             if (variableDeclaration.getDefaultValue() != null) {
                 addCommand(variableDeclaration.getDefaultValue().accept(this));
             } else {
@@ -309,12 +354,7 @@ public class CodeGenerator extends Visitor<String> {
                     addCommand(primitiveToNone(variableType));
                 }
                 if (variableType instanceof ListType) {
-                    addCommand("new List");
-                    addCommand("dup");
-                    addCommand("new java/util/ArrayList");
-                    addCommand("dup");
-                    addCommand("invokespecial java/util/ArrayList/<init>()V");
-                    addCommand("invokespecial List/<init>(Ljava/util/ArrayList;)V");
+                    addCommand(makeList());
                 }
                 if (variableType instanceof FptrType) {
                     addCommand("aconst_null");
@@ -560,17 +600,16 @@ public class CodeGenerator extends Visitor<String> {
     public String visit(ListAccessByIndex listAccessByIndex) { // return None primitive
         //todo - check -- same as pdf
         var sb = new StringBuilder();
-        sb.append(listAccessByIndex.getIndex().accept(this));
-        sb.append("\n");
-        sb.append("invokevirtual java/lang/Integer/intValue()I");
-        sb.append("\n");
         sb.append(listAccessByIndex.getInstance().accept(this));
         sb.append("\n");
-        sb.append("invokevirtual List/getElement(I)Ljava/lang/Object");
+        sb.append(listAccessByIndex.getIndex().accept(this));
         sb.append("\n");
-        // cast to type
+        sb.append(noneToPrimitive(new IntType()));
+        sb.append("\n");
+        sb.append("invokevirtual List/getElement(I)Ljava/lang/Object;");
+        sb.append("\n");
         Type obj = listAccessByIndex.accept(expressionTypeChecker);
-        sb.append("checkcast "+ getType(obj));
+        sb.append(cast(obj));
         sb.append("\n");
         return sb.toString();
     }

@@ -1,8 +1,11 @@
-struct t
-    int b
+struct a begin
+    int b = 1
+    bool c = true
+    list#int t
+end
 
 main()begin
-int b
-int c
-    int a = b + c
+    struct a dd;
+    append(dd.t, dd.b)
+    display(dd.t[0])
 end
