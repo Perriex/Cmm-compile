@@ -39,8 +39,8 @@ end
 ```
 
 Other parts:
-- [lexical and syntactic analyzer](https://www.google.com)
-- [symbol table](https://www.google.com)
-- [semantic analysis](https://www.google.com)
-- [compile and run](https://www.google.com)
+- [lexical and syntactic analyzer](https://github.com/Perriex/Cmm-lexical-and-syntactic-analyzer)
+- [symbol table](https://github.com/Perriex/Cmm-symbol-table)
+- [semantic analysis](https://github.com/Perriex/Cmm-semantic-analysis)
+- [compile and run](https://github.com/Perriex/Cmm-compile)
 
